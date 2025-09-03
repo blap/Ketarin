@@ -1,7 +1,10 @@
-version: 1.8.10.{build}
+version: 1.8.11.{build}
 configuration: Release
 init:
 - cmd: ''
+environment:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
 assembly_info:
   patch: true
   file: '**\AssemblyInfo.*'
@@ -9,10 +12,12 @@ assembly_info:
   assembly_file_version: '{version}'
   assembly_informational_version: '{version}'
 install:
-- cmd: nuget restore
-build:
-  project: Ketarin.csproj
-  verbosity: minimal
+- ps: |
+    # Install .NET 6.0 SDK
+    choco install dotnet-6.0-sdk
+- cmd: dotnet restore
+build_script:
+- cmd: dotnet build Ketarin.csproj --configuration Release --verbosity minimal
 after_build:
 - cmd: >-
     7z a Ketarin.zip %APPVEYOR_BUILD_FOLDER%\bin\Release\*.dll
