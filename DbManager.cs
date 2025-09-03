@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Windows.Forms;
 using CDBurnerXP;
 using CDBurnerXP.IO;
@@ -38,7 +38,7 @@ namespace Ketarin
                     using (IDbCommand command = Connection.CreateCommand())
                     {
                         command.CommandText = "SELECT SettingValue FROM settings WHERE SettingPath = @SettingPath";
-                        command.Parameters.Add(new SQLiteParameter("@SettingPath", this.GetPath(path)));
+                        command.Parameters.Add(new SqliteParameter("@SettingPath", this.GetPath(path)));
                         return command.ExecuteScalar();
                     }
                 }
@@ -53,14 +53,14 @@ namespace Ketarin
                         command.Transaction = transaction;
 
                         command.CommandText = "UPDATE settings SET SettingValue = @SettingValue WHERE SettingPath = @SettingPath";
-                        command.Parameters.Add(new SQLiteParameter("@SettingValue", value));
-                        command.Parameters.Add(new SQLiteParameter("@SettingPath", path));
+                        command.Parameters.Add(new SqliteParameter("@SettingValue", value));
+                        command.Parameters.Add(new SqliteParameter("@SettingPath", path));
                         if (command.ExecuteNonQuery() == 0)
                         {
                             command.CommandText = @"INSERT INTO settings (SettingPath, SettingValue)
                                                  VALUES (@SettingPath, @SettingValue)";
-                            command.Parameters.Add(new SQLiteParameter("@SettingValue", value));
-                            command.Parameters.Add(new SQLiteParameter("@SettingPath", path));
+                            command.Parameters.Add(new SqliteParameter("@SettingValue", value));
+                            command.Parameters.Add(new SqliteParameter("@SettingPath", path));
                             command.ExecuteNonQuery();
                         }
                     }
@@ -77,7 +77,7 @@ namespace Ketarin
 
         #endregion
 
-        private static SQLiteConnection m_DbConn;
+        private static SqliteConnection m_DbConn;
         private static string m_DatabasePath;
         private static bool m_BackupDone;
 
@@ -131,7 +131,7 @@ namespace Ketarin
         /// <summary>
         /// Returns an application wide database connection.
         /// </summary>
-        public static SQLiteConnection Connection
+        public static SqliteConnection Connection
         {
             get
             {
@@ -162,7 +162,7 @@ namespace Ketarin
         /// time within different threads (for example, .Save() for multiple
         /// application jobs), we need a "unique" connection.
         /// </summary>
-        public static SQLiteConnection NewConnection
+        public static SqliteConnection NewConnection
         {
             get
             {
@@ -193,7 +193,7 @@ namespace Ketarin
                     connString += "New=True;";
                 }
 
-                SQLiteConnection connection = new SQLiteConnection(connString, true);
+                SqliteConnection connection = new SqliteConnection(connString);
                 connection.Open();
 
                 return connection;
@@ -428,7 +428,7 @@ namespace Ketarin
                     command.CommandText = @"UPDATE variables SET JobGuid = (SELECT JobGuid FROM jobs WHERE jobs.JobId = variables.JobId);
                                             UPDATE variables SET JobGuid = @JobGuid WHERE JobId = 0;
                                             DELETE FROM variables WHERE JobGuid IS NULL";
-                    command.Parameters.Add(new SQLiteParameter("@JobGuid", FormatGuid(Guid.Empty)));
+                    command.Parameters.Add(new SqliteParameter("@JobGuid", FormatGuid(Guid.Empty)));
                     command.ExecuteNonQuery();
                 }
 
@@ -615,7 +615,7 @@ namespace Ketarin
             using (IDbCommand command = Connection.CreateCommand())
             {
                 command.CommandText = "SELECT * FROM jobs WHERE JobGuid = @JobGuid";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", FormatGuid(appGuid)));
+                command.Parameters.Add(new SqliteParameter("@JobGuid", FormatGuid(appGuid)));
 
                 using (IDataReader reader = command.ExecuteReader())
                 {
@@ -632,7 +632,7 @@ namespace Ketarin
                 using (IDbCommand command = Connection.CreateCommand())
                 {
                     command.CommandText = @"SELECT * FROM variables WHERE JobGuid = @JobGuid";
-                    command.Parameters.Add(new SQLiteParameter("@JobGuid", FormatGuid(appGuid)));
+                    command.Parameters.Add(new SqliteParameter("@JobGuid", FormatGuid(appGuid)));
                     using (IDataReader reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -667,7 +667,7 @@ namespace Ketarin
             using (IDbCommand command = conn.CreateCommand())
             {
                 command.CommandText = "SELECT JobGuid FROM jobs WHERE JobGuid = @JobGuid";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", FormatGuid(appGuid)));
+                command.Parameters.Add(new SqliteParameter("@JobGuid", FormatGuid(appGuid)));
                 return (command.ExecuteScalar() != null);
             }
         }
@@ -775,7 +775,7 @@ namespace Ketarin
                 using (IDbCommand command = Connection.CreateCommand())
                 {
                     command.CommandText = "SELECT * FROM setuplists_applications WHERE ListGuid = @ListGuid";
-                    command.Parameters.Add(new SQLiteParameter("@ListGuid", FormatGuid(list.Guid)));
+                    command.Parameters.Add(new SqliteParameter("@ListGuid", FormatGuid(list.Guid)));
 
                     using (IDataReader reader = command.ExecuteReader())
                     {

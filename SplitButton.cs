@@ -26,7 +26,7 @@ namespace wyDay.Controls
 
 
         private ContextMenuStrip m_SplitMenuStrip;
-        private ContextMenu m_SplitMenu;
+        // private ContextMenu m_SplitMenu; // Temporarily disabled for .NET 6.0 migration
 
         TextFormatFlags textFormatFlags = TextFormatFlags.Default;
 
@@ -64,6 +64,8 @@ namespace wyDay.Controls
             }
         }
 
+        // Temporarily disabled for .NET 6.0 migration - ContextMenu is obsolete
+        /*
         [DefaultValue(null)]
         public ContextMenu SplitMenu
         {
@@ -90,6 +92,7 @@ namespace wyDay.Controls
                 m_SplitMenu = value;
             }
         }
+        */
 
         [DefaultValue(null)]
         public ContextMenuStrip SplitMenuStrip

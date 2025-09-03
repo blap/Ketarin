@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Text;
-using Tamir.SharpSsh.java.util;
-using Tamir.SharpSsh.jsch;
+using Renci.SshNet;
 
 namespace Ketarin
 {

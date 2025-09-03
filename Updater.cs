@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -486,10 +486,10 @@ namespace Ketarin
                         // If no exception happened, we immediately leave the loop
                         break;
                     }
-                    catch (SQLiteException ex)
+                    catch (SqliteException ex)
                     {
                         // If "locked" exception (slow USB device eg.) continue trying
-                        if (ex.ErrorCode == (int)SQLiteErrorCode.Locked)
+                        if (ex.ErrorCode == (int)1)
                         {
                             numTries--;
                             LogDialog.Log(job, ex);
@@ -581,7 +581,7 @@ namespace Ketarin
                 LogDialog.Log(job, ex);
                 m_Errors.Add(new ApplicationJobError(job, ex));
             }
-            catch (SQLiteException ex)
+            catch (SqliteException ex)
             {
                 LogDialog.Log(job, ex);
                 this.HandleUpdateFailed(job, new ApplicationJobError(job, ex, requestedUrl));

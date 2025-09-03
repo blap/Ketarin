@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -210,7 +210,7 @@ namespace Ketarin
         /// </summary>
         public void Save()
         {
-            using (SQLiteTransaction transaction = DbManager.Connection.BeginTransaction())
+            using (SqliteTransaction transaction = DbManager.Connection.BeginTransaction())
             {
                 if (this.Guid == Guid.Empty)
                 {
@@ -222,8 +222,8 @@ namespace Ketarin
                 {
                     command.Transaction = transaction;
                     command.CommandText = @"INSERT OR REPLACE INTO setuplists (ListGuid, Name) VALUES (@ListGuid, @Name)";
-                    command.Parameters.Add(new SQLiteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
-                    command.Parameters.Add(new SQLiteParameter("@Name", this.Name));
+                    command.Parameters.Add(new SqliteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
+                    command.Parameters.Add(new SqliteParameter("@Name", this.Name));
                     command.ExecuteNonQuery();
                 }
 
@@ -232,7 +232,7 @@ namespace Ketarin
                 {
                     command.Transaction = transaction;
                     command.CommandText = @"DELETE FROM setuplists_applications WHERE ListGuid = @ListGuid";
-                    command.Parameters.Add(new SQLiteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
+                    command.Parameters.Add(new SqliteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
                     command.ExecuteNonQuery();
                 }
                 foreach (ApplicationJob app in this.Applications)
@@ -241,8 +241,8 @@ namespace Ketarin
                     {
                         command.Transaction = transaction;
                         command.CommandText = @"INSERT INTO setuplists_applications (ListGuid, JobGuid) VALUES (@ListGuid, @JobGuid)";
-                        command.Parameters.Add(new SQLiteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
-                        command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(app.Guid)));
+                        command.Parameters.Add(new SqliteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
+                        command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(app.Guid)));
                         command.ExecuteNonQuery();
                     }
                 }
@@ -267,14 +267,14 @@ namespace Ketarin
         {
             if (this.isPredefined) return;
 
-            using (SQLiteTransaction transaction = DbManager.Connection.BeginTransaction())
+            using (SqliteTransaction transaction = DbManager.Connection.BeginTransaction())
             {
                 // Insert or update list
                 using (IDbCommand command = DbManager.Connection.CreateCommand())
                 {
                     command.Transaction = transaction;
                     command.CommandText = @"DELETE FROM setuplists WHERE ListGuid = @ListGuid";
-                    command.Parameters.Add(new SQLiteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
+                    command.Parameters.Add(new SqliteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
                     command.ExecuteNonQuery();
                 }
 
@@ -282,7 +282,7 @@ namespace Ketarin
                 {
                     command.Transaction = transaction;
                     command.CommandText = @"DELETE FROM setuplists_applications WHERE ListGuid = @ListGuid";
-                    command.Parameters.Add(new SQLiteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
+                    command.Parameters.Add(new SqliteParameter("@ListGuid", DbManager.FormatGuid(this.Guid)));
                     command.ExecuteNonQuery();
                 }
 

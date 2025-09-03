@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -270,7 +270,7 @@ namespace Ketarin
                     using (IDbCommand command = DbManager.Connection.CreateCommand())
                     {
                         command.CommandText = "SELECT * FROM setupinstructions WHERE JobGuid = @JobGuid ORDER BY Position";
-                        command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                        command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
 
                         using (IDataReader reader = command.ExecuteReader())
                         {
@@ -745,13 +745,13 @@ namespace Ketarin
         /// </summary>
         public void Delete()
         {
-            SQLiteTransaction transaction = DbManager.Connection.BeginTransaction();
+            SqliteTransaction transaction = DbManager.Connection.BeginTransaction();
 
             using (IDbCommand command = DbManager.Connection.CreateCommand())
             {
                 command.Transaction = transaction;
                 command.CommandText = @"DELETE FROM jobs WHERE JobGuid = @JobGuid";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
                 command.ExecuteNonQuery();
             }
 
@@ -760,7 +760,7 @@ namespace Ketarin
             {
                 command.Transaction = transaction;
                 command.CommandText = "DELETE FROM variables WHERE JobGuid = @JobGuid";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
                 command.ExecuteNonQuery();
             }
 
@@ -772,7 +772,7 @@ namespace Ketarin
         /// </summary>
         public static void DeleteAll()
         {
-            SQLiteTransaction transaction = DbManager.Connection.BeginTransaction();
+            SqliteTransaction transaction = DbManager.Connection.BeginTransaction();
 
             using (IDbCommand command = DbManager.Connection.CreateCommand())
             {
@@ -1422,9 +1422,9 @@ namespace Ketarin
         {
             lock (this)
             {
-                using (SQLiteConnection conn = DbManager.NewConnection)
+                using (SqliteConnection conn = DbManager.NewConnection)
                 {
-                    using (SQLiteTransaction transaction = conn.BeginTransaction())
+                    using (SqliteTransaction transaction = conn.BeginTransaction())
                     {
                         if (!DbManager.ApplicationExists(conn, this.Guid))
                         {
@@ -1435,8 +1435,8 @@ namespace Ketarin
                             {
                                 command.Transaction = transaction;
                                 command.CommandText = @"INSERT INTO jobs (JobGuid, CanBeShared) VALUES (@JobGuid, @CanBeShared)";
-                                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-                                command.Parameters.Add(new SQLiteParameter("@CanBeShared", this.CanBeShared));
+                                command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                                command.Parameters.Add(new SqliteParameter("@CanBeShared", this.CanBeShared));
                                 command.ExecuteNonQuery();
                             }
                         }
@@ -1447,7 +1447,7 @@ namespace Ketarin
                         {
                             command.Transaction = transaction;
                             command.CommandText = "SELECT CanBeShared FROM jobs WHERE JobGuid = @JobGuid";
-                            command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                            command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
                             bool canBeShared = Convert.ToBoolean(command.ExecuteScalar());
                             if (!canBeShared)
                             {
@@ -1498,40 +1498,40 @@ namespace Ketarin
                                                    NumberOfRevisions = @NumberOfRevisions
                                              WHERE JobGuid = @JobGuid";
 
-                            command.Parameters.Add(new SQLiteParameter("@ApplicationName", this.Name));
-                            command.Parameters.Add(new SQLiteParameter("@FixedDownloadUrl", this.FixedDownloadUrl));
-                            command.Parameters.Add(new SQLiteParameter("@TargetPath", this.TargetPath));
-                            command.Parameters.Add(new SQLiteParameter("@LastUpdated", this.m_LastUpdated));
-                            command.Parameters.Add(new SQLiteParameter("@IsEnabled", this.Enabled));
-                            command.Parameters.Add(new SQLiteParameter("@FileHippoId", this.FileHippoId));
-                            command.Parameters.Add(new SQLiteParameter("@DeletePreviousFile", this.DeletePreviousFile));
-                            command.Parameters.Add(new SQLiteParameter("@PreviousLocation", this.PreviousLocation));
-                            command.Parameters.Add(new SQLiteParameter("@SourceType", this.DownloadSourceType));
-                            command.Parameters.Add(new SQLiteParameter("@ExecuteCommand", this.ExecuteCommand));
-                            command.Parameters.Add(new SQLiteParameter("@ExecutePreCommand", this.ExecutePreCommand));
-                            command.Parameters.Add(new SQLiteParameter("@Category", this.Category));
-                            command.Parameters.Add(new SQLiteParameter("@CanBeShared", this.CanBeShared));
-                            command.Parameters.Add(new SQLiteParameter("@ShareApplication", this.m_ShareApplication));
-                            command.Parameters.Add(new SQLiteParameter("@HttpReferer", this.HttpReferer));
-                            command.Parameters.Add(new SQLiteParameter("@FileHippoVersion", this.FileHippoVersion));
-                            command.Parameters.Add(new SQLiteParameter("@DownloadBeta", (int) this.DownloadBeta));
-                            command.Parameters.Add(new SQLiteParameter("@VariableChangeIndicator", this.m_VariableChangeIndicator));
-                            command.Parameters.Add(new SQLiteParameter("@VariableChangeIndicatorLastContent", this.m_VariableChangeIndicatorLastContent));
-                            command.Parameters.Add(new SQLiteParameter("@ExclusiveDownload", this.ExclusiveDownload));
-                            command.Parameters.Add(new SQLiteParameter("@CheckForUpdateOnly", this.CheckForUpdatesOnly));
-                            command.Parameters.Add(new SQLiteParameter("@CachedPadFileVersion", this.CachedPadFileVersion));
-                            command.Parameters.Add(new SQLiteParameter("@LastFileDate", this.LastFileDate));
-                            command.Parameters.Add(new SQLiteParameter("@LastFileSize", this.LastFileSize));
-                            command.Parameters.Add(new SQLiteParameter("@IgnoreFileInformation", this.IgnoreFileInformation));
-                            command.Parameters.Add(new SQLiteParameter("@UserNotes", this.UserNotes));
-                            command.Parameters.Add(new SQLiteParameter("@WebsiteUrl", this.WebsiteUrl));
-                            command.Parameters.Add(new SQLiteParameter("@UserAgent", this.UserAgent));
-                            command.Parameters.Add(new SQLiteParameter("@ExecuteCommandType", this.ExecuteCommandType));
-                            command.Parameters.Add(new SQLiteParameter("@ExecutePreCommandType", this.ExecutePreCommandType));
-                            command.Parameters.Add(new SQLiteParameter("@SourceTemplate", this.SourceTemplate));
-                            command.Parameters.Add(new SQLiteParameter("@HashVariable", this.HashVariable));
-                            command.Parameters.Add(new SQLiteParameter("@HashType", (int)this.HashType));
-                            command.Parameters.Add(new SQLiteParameter("@NumberOfRevisions", NumberOfRevisions)); 
+                            command.Parameters.Add(new SqliteParameter("@ApplicationName", this.Name));
+                            command.Parameters.Add(new SqliteParameter("@FixedDownloadUrl", this.FixedDownloadUrl));
+                            command.Parameters.Add(new SqliteParameter("@TargetPath", this.TargetPath));
+                            command.Parameters.Add(new SqliteParameter("@LastUpdated", this.m_LastUpdated));
+                            command.Parameters.Add(new SqliteParameter("@IsEnabled", this.Enabled));
+                            command.Parameters.Add(new SqliteParameter("@FileHippoId", this.FileHippoId));
+                            command.Parameters.Add(new SqliteParameter("@DeletePreviousFile", this.DeletePreviousFile));
+                            command.Parameters.Add(new SqliteParameter("@PreviousLocation", this.PreviousLocation));
+                            command.Parameters.Add(new SqliteParameter("@SourceType", this.DownloadSourceType));
+                            command.Parameters.Add(new SqliteParameter("@ExecuteCommand", this.ExecuteCommand));
+                            command.Parameters.Add(new SqliteParameter("@ExecutePreCommand", this.ExecutePreCommand));
+                            command.Parameters.Add(new SqliteParameter("@Category", this.Category));
+                            command.Parameters.Add(new SqliteParameter("@CanBeShared", this.CanBeShared));
+                            command.Parameters.Add(new SqliteParameter("@ShareApplication", this.m_ShareApplication));
+                            command.Parameters.Add(new SqliteParameter("@HttpReferer", this.HttpReferer));
+                            command.Parameters.Add(new SqliteParameter("@FileHippoVersion", this.FileHippoVersion));
+                            command.Parameters.Add(new SqliteParameter("@DownloadBeta", (int) this.DownloadBeta));
+                            command.Parameters.Add(new SqliteParameter("@VariableChangeIndicator", this.m_VariableChangeIndicator));
+                            command.Parameters.Add(new SqliteParameter("@VariableChangeIndicatorLastContent", this.m_VariableChangeIndicatorLastContent));
+                            command.Parameters.Add(new SqliteParameter("@ExclusiveDownload", this.ExclusiveDownload));
+                            command.Parameters.Add(new SqliteParameter("@CheckForUpdateOnly", this.CheckForUpdatesOnly));
+                            command.Parameters.Add(new SqliteParameter("@CachedPadFileVersion", this.CachedPadFileVersion));
+                            command.Parameters.Add(new SqliteParameter("@LastFileDate", this.LastFileDate));
+                            command.Parameters.Add(new SqliteParameter("@LastFileSize", this.LastFileSize));
+                            command.Parameters.Add(new SqliteParameter("@IgnoreFileInformation", this.IgnoreFileInformation));
+                            command.Parameters.Add(new SqliteParameter("@UserNotes", this.UserNotes));
+                            command.Parameters.Add(new SqliteParameter("@WebsiteUrl", this.WebsiteUrl));
+                            command.Parameters.Add(new SqliteParameter("@UserAgent", this.UserAgent));
+                            command.Parameters.Add(new SqliteParameter("@ExecuteCommandType", this.ExecuteCommandType));
+                            command.Parameters.Add(new SqliteParameter("@ExecutePreCommandType", this.ExecutePreCommandType));
+                            command.Parameters.Add(new SqliteParameter("@SourceTemplate", this.SourceTemplate));
+                            command.Parameters.Add(new SqliteParameter("@HashVariable", this.HashVariable));
+                            command.Parameters.Add(new SqliteParameter("@HashType", (int)this.HashType));
+                            command.Parameters.Add(new SqliteParameter("@NumberOfRevisions", NumberOfRevisions)); 
 
                             // In order to find files if the drive letter has changed (portable USB stick), also remember the 
                             // last relative location.
@@ -1556,18 +1556,18 @@ namespace Ketarin
                                 }
                             }
 
-                            command.Parameters.Add(new SQLiteParameter("@PreviousRelativeLocation", this.m_PreviousRelativeLocation));
+                            command.Parameters.Add(new SqliteParameter("@PreviousRelativeLocation", this.m_PreviousRelativeLocation));
 
                             if (this.DownloadDate.HasValue)
                             {
-                                command.Parameters.Add(new SQLiteParameter("@DownloadDate", this.DownloadDate.Value));
+                                command.Parameters.Add(new SqliteParameter("@DownloadDate", this.DownloadDate.Value));
                             }
                             else
                             {
-                                command.Parameters.Add(new SQLiteParameter("@DownloadDate", DBNull.Value));
+                                command.Parameters.Add(new SqliteParameter("@DownloadDate", DBNull.Value));
                             }
 
-                            command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                            command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
 
                             command.ExecuteNonQuery();
                         }
@@ -1579,7 +1579,7 @@ namespace Ketarin
                         {
                             command.Transaction = transaction;
                             command.CommandText = "DELETE FROM variables WHERE JobGuid = @JobGuid";
-                            command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                            command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
                             command.ExecuteNonQuery();
                         }
 
@@ -1594,7 +1594,7 @@ namespace Ketarin
                             {
                                 command.Transaction = transaction;
                                 command.CommandText = "DELETE FROM setupinstructions WHERE JobGuid = @JobGuid";
-                                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
+                                command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
                                 command.ExecuteNonQuery();
                             }
 

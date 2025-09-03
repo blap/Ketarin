@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
@@ -53,9 +53,9 @@ namespace Ketarin
             {
                 command.Transaction = transaction;
                 command.CommandText = "INSERT INTO setupinstructions (JobGuid, Position, Data) VALUES(@JobGuid, @Position, @Data)";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Application.Guid)));
-                command.Parameters.Add(new SQLiteParameter("@Position", position));
-                command.Parameters.Add(new SQLiteParameter("@Data", output.ToString()));
+                command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(this.Application.Guid)));
+                command.Parameters.Add(new SqliteParameter("@Position", position));
+                command.Parameters.Add(new SqliteParameter("@Data", output.ToString()));
                 command.ExecuteNonQuery();
             }
         }

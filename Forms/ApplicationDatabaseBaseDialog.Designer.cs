@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows.Forms;
 using CDBurnerXP.Controls;
 
@@ -35,8 +35,9 @@ namespace Ketarin.Forms
             this.lblResults = new System.Windows.Forms.Label();
             this.bCancel = new System.Windows.Forms.Button();
             this.bOK = new System.Windows.Forms.Button();
-            this.cmnuApplications = new System.Windows.Forms.ContextMenu();
-            this.cmnuProperties = new System.Windows.Forms.MenuItem();
+            // Temporarily disabled menu controls for .NET 6.0 migration
+            // this.cmnuApplications = new System.Windows.Forms.ContextMenu();
+            // this.cmnuProperties = new System.Windows.Forms.MenuItem();
             this.olvApplications = new CDBurnerXP.Controls.FastObjectListView();
             this.colAppName = new CDBurnerXP.Controls.OLVColumn();
             this.colDate = new CDBurnerXP.Controls.OLVColumn();
@@ -75,17 +76,20 @@ namespace Ketarin.Forms
             this.bOK.TabIndex = 5;
             this.bOK.Text = "OK";
             this.bOK.UseVisualStyleBackColor = true;
-            // 
+            // Temporarily disabled menu controls configuration for .NET 6.0 migration
+            /*
+            //
             // cmnuApplications
-            // 
+            //
             this.cmnuApplications.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
             this.cmnuProperties});
-            // 
+            //
             // cmnuProperties
-            // 
+            //
             this.cmnuProperties.Index = 0;
             this.cmnuProperties.Text = "&Properties";
             this.cmnuProperties.Click += new System.EventHandler(this.cmnuProperties_Click);
+            */
             // 
             // olvApplications
             // 
@@ -102,7 +106,7 @@ namespace Ketarin.Forms
             this.colAppName,
             this.colDate,
             this.colUseCount});
-            this.olvApplications.ContextMenu = this.cmnuApplications;
+            // this.olvApplications.ContextMenu = this.cmnuApplications; // Temporarily disabled for .NET 6.0 migration
             this.olvApplications.FullRowSelect = true;
             this.olvApplications.HideSelection = false;
             this.olvApplications.HighlightBackgroundColor = System.Drawing.Color.Empty;
@@ -165,8 +169,8 @@ namespace Ketarin.Forms
 
         private OLVColumn colAppName;
         private OLVColumn colDate;
-        private ContextMenu cmnuApplications;
-        private MenuItem cmnuProperties;
+        // private ContextMenu cmnuApplications; // Temporarily disabled for .NET 6.0 migration
+        // private MenuItem cmnuProperties; // Temporarily disabled for .NET 6.0 migration
         protected Button bOK;
         protected FastObjectListView olvApplications;
         protected Label lblResults;

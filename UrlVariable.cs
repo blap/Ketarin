@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -61,7 +61,7 @@ namespace Ketarin
                     {
                         comm.Transaction = transaction;
                         comm.CommandText = "DELETE FROM variables WHERE JobGuid = @JobGuid";
-                        comm.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(Guid.Empty)));
+                        comm.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(Guid.Empty)));
                         comm.ExecuteNonQuery();
                     }
 
@@ -143,12 +143,12 @@ namespace Ketarin
                 {
                     m_GlobalVariables = new GlobalUrlVariableCollection();
 
-                    using (SQLiteConnection conn = DbManager.NewConnection)
+                    using (SqliteConnection conn = DbManager.NewConnection)
                     {
                         using (IDbCommand command = conn.CreateCommand())
                         {
                             command.CommandText = @"SELECT * FROM variables WHERE JobGuid IS NULL OR JobGuid = @JobGuid";
-                            command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(Guid.Empty)));
+                            command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(Guid.Empty)));
                             using (IDataReader reader = command.ExecuteReader())
                             {
                                 while (reader.Read())
@@ -320,17 +320,17 @@ namespace Ketarin
                 command.CommandText = @"INSERT INTO variables (JobGuid, VariableName, Url, StartText, EndText, RegularExpression, CachedContent, VariableType, TextualContent, RegexRightToLeft, PostData)
                                              VALUES (@JobGuid, @VariableName, @Url, @StartText, @EndText, @RegularExpression, @CachedContent, @VariableType, @TextualContent, @RegexRightToLeft, @PostData)";
 
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(parentJobGuid)));
-                command.Parameters.Add(new SQLiteParameter("@VariableName", this.Name));
-                command.Parameters.Add(new SQLiteParameter("@Url", this.Url));
-                command.Parameters.Add(new SQLiteParameter("@StartText", this.StartText));
-                command.Parameters.Add(new SQLiteParameter("@EndText", this.EndText));
-                command.Parameters.Add(new SQLiteParameter("@RegularExpression", this.m_Regex));
-                command.Parameters.Add(new SQLiteParameter("@RegexRightToLeft", this.RegexRightToLeft));
-                command.Parameters.Add(new SQLiteParameter("@CachedContent", this.CachedContent));
-                command.Parameters.Add(new SQLiteParameter("@VariableType", this.VariableType));
-                command.Parameters.Add(new SQLiteParameter("@TextualContent", this.TextualContent));
-                command.Parameters.Add(new SQLiteParameter("@PostData", this.PostData));
+                command.Parameters.Add(new SqliteParameter("@JobGuid", DbManager.FormatGuid(parentJobGuid)));
+                command.Parameters.Add(new SqliteParameter("@VariableName", this.Name));
+                command.Parameters.Add(new SqliteParameter("@Url", this.Url));
+                command.Parameters.Add(new SqliteParameter("@StartText", this.StartText));
+                command.Parameters.Add(new SqliteParameter("@EndText", this.EndText));
+                command.Parameters.Add(new SqliteParameter("@RegularExpression", this.m_Regex));
+                command.Parameters.Add(new SqliteParameter("@RegexRightToLeft", this.RegexRightToLeft));
+                command.Parameters.Add(new SqliteParameter("@CachedContent", this.CachedContent));
+                command.Parameters.Add(new SqliteParameter("@VariableType", this.VariableType));
+                command.Parameters.Add(new SqliteParameter("@TextualContent", this.TextualContent));
+                command.Parameters.Add(new SqliteParameter("@PostData", this.PostData));
                 
                 command.ExecuteNonQuery();
             }

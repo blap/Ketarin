@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 namespace Ketarin
 {
@@ -42,8 +42,8 @@ namespace Ketarin
                 using (IDbCommand command = DbManager.Connection.CreateCommand())
                 {
                     command.CommandText = @"SELECT SnippetGuid FROM snippets WHERE Name = @Name AND Type = @Type";
-                    command.Parameters.Add(new SQLiteParameter("@Name", Name));
-                    command.Parameters.Add(new SQLiteParameter("@Type", Type.ToString()));
+                    command.Parameters.Add(new SqliteParameter("@Name", Name));
+                    command.Parameters.Add(new SqliteParameter("@Type", Type.ToString()));
                     string existingGuid = command.ExecuteScalar() as string;
                     if (existingGuid != null)
                     {
@@ -55,10 +55,10 @@ namespace Ketarin
             using (IDbCommand command = DbManager.Connection.CreateCommand())
             {
                 command.CommandText = @"INSERT OR REPLACE INTO snippets (SnippetGuid, Name, Type, Text) VALUES (@SnippetGuid, @Name, @Type, @Text)";
-                command.Parameters.Add(new SQLiteParameter("@SnippetGuid", DbManager.FormatGuid(this.Guid)));
-                command.Parameters.Add(new SQLiteParameter("@Name", Name));
-                command.Parameters.Add(new SQLiteParameter("@Type", Type.ToString()));
-                command.Parameters.Add(new SQLiteParameter("@Text", Text));
+                command.Parameters.Add(new SqliteParameter("@SnippetGuid", DbManager.FormatGuid(this.Guid)));
+                command.Parameters.Add(new SqliteParameter("@Name", Name));
+                command.Parameters.Add(new SqliteParameter("@Type", Type.ToString()));
+                command.Parameters.Add(new SqliteParameter("@Text", Text));
                 command.ExecuteNonQuery();
             }
         }
@@ -79,7 +79,7 @@ namespace Ketarin
             using (IDbCommand command = DbManager.Connection.CreateCommand())
             {
                 command.CommandText = @"DELETE FROM snippets WHERE SnippetGuid = @SnippetGuid";
-                command.Parameters.Add(new SQLiteParameter("@SnippetGuid", DbManager.FormatGuid(this.Guid)));
+                command.Parameters.Add(new SqliteParameter("@SnippetGuid", DbManager.FormatGuid(this.Guid)));
                 command.ExecuteNonQuery();
             }
         }

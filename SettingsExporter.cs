@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
@@ -121,7 +121,7 @@ namespace Ketarin
             XmlElement snippetNodes = doc.SelectSingleNode("//CodeSnippets") as XmlElement;
             if (snippetNodes != null)
             {
-                using (SQLiteCommand comm = DbManager.Connection.CreateCommand())
+                using (SqliteCommand comm = DbManager.Connection.CreateCommand())
                 {
                     comm.CommandText = "DELETE FROM snippets";
                     comm.ExecuteNonQuery();
