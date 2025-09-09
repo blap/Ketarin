@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using CDBurnerXP.Controls;
@@ -17,7 +18,8 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the variable names to use for edit dialogs.
         /// </summary>
-        public string[] VariableNames
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string[]? VariableNames
         {
             get; set;
         }
@@ -27,8 +29,8 @@ namespace Ketarin.Forms
         /// </summary>
         public string CommandText
         {
-            get { return lblCommandText.Text; }
-            private set { lblCommandText.Text = value; }
+            get { return lblCommandText?.Text ?? string.Empty; }
+            private set { lblCommandText!.Text = value; }
         }
 
         /// <summary>
@@ -36,8 +38,8 @@ namespace Ketarin.Forms
         /// </summary>
         public string CommandName
         {
-            get { return lblCommandName.Text; }
-            private set { lblCommandName.Text = value; }
+            get { return lblCommandName?.Text ?? string.Empty; }
+            private set { lblCommandName!.Text = value; }
         }
 
         /// <summary>
@@ -45,18 +47,18 @@ namespace Ketarin.Forms
         /// </summary>
         public SetupInstruction SetupInstruction
         {
-            get { return instruction; }
+            get { return instruction!; }
         }
 
         #endregion
 
-        private TransparentLabel lblCommandText;
-        private LinkLabel lnkEdit;
-        private LinkLabel lnkRemove;
-        private TransparentLabel lblCommandName;
-        private TransparentLabel lblMoveUp;
-        private TransparentLabel lblMoveDown;
-        private SetupInstruction instruction;
+        private TransparentLabel? lblCommandText;
+        private LinkLabel? lnkEdit;
+        private LinkLabel? lnkRemove;
+        private TransparentLabel? lblCommandName;
+        private TransparentLabel? lblMoveUp;
+        private TransparentLabel? lblMoveDown;
+        private SetupInstruction? instruction;
 
         public SetupInstructionListBoxPanel()
         {
@@ -65,7 +67,7 @@ namespace Ketarin.Forms
             GetAllMouseDowns(Controls);
         }
 
-        public SetupInstructionListBoxPanel(SetupInstruction instruction) : this()
+        public SetupInstructionListBoxPanel(SetupInstruction? instruction) : this()
         {
             UpdateFromInstruction(instruction);
         }
@@ -88,15 +90,15 @@ namespace Ketarin.Forms
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        private void lnkEdit_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void lnkEdit_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
         {
             EditInstruction();
         }
 
-        private void lblMoveUp_Click(object sender, EventArgs e)
+        private void lblMoveUp_Click(object? sender, EventArgs e)
         {
-            int oldIndex = this.Parent.Controls.IndexOf(this);
-            if (oldIndex <= 0) return;
+            int oldIndex = this.Parent?.Controls.IndexOf(this) ?? -1;
+            if (oldIndex <= 0 || this.Parent == null) return;
 
             Control parent = this.Parent;
 
@@ -109,10 +111,10 @@ namespace Ketarin.Forms
             UpdateParent(parent, oldControls);
         }
 
-        private void lblMoveDown_Click(object sender, EventArgs e)
+        private void lblMoveDown_Click(object? sender, EventArgs e)
         {
-            int oldIndex = this.Parent.Controls.IndexOf(this);
-            if (oldIndex >= this.Parent.Controls.Count - 1) return;
+            int oldIndex = this.Parent?.Controls.IndexOf(this) ?? -1;
+            if (this.Parent == null || oldIndex >= this.Parent.Controls.Count - 1) return;
 
             Control parent = this.Parent;
 
@@ -128,23 +130,26 @@ namespace Ketarin.Forms
         private void UpdateParent(Control parent, Control[] oldControls)
         {
             // Prevent flicker and the like
-            using (new ControlRedrawLock(parent.Parent))
+            if (parent.Parent != null)
             {
-                parent.Controls.AddRange(oldControls);
+                using (new ControlRedrawLock(parent.Parent))
+                {
+                    parent.Controls.AddRange(oldControls);
 
-                // Brute force scrollbar update
-                parent.Width += 1;
-                parent.Width -= 1;
+                    // Brute force scrollbar update
+                    parent.Width += 1;
+                    parent.Width -= 1;
 
-                this.Select();
+                    this.Select();
+                }
             }
         }
 
-        private void UpdateFromInstruction(SetupInstruction instruction)
+        private void UpdateFromInstruction(SetupInstruction? instruction)
         {
             this.instruction = instruction;
-            CommandText = instruction.ToString();
-            CommandName = instruction.Name;
+            CommandText = instruction?.ToString() ?? string.Empty;
+            CommandName = instruction?.Name ?? string.Empty;
         }
 
         private void RemoveInstruction()
@@ -154,13 +159,17 @@ namespace Ketarin.Forms
 
         private void EditInstruction()
         {
-            if (InstructionBaseDialog.ShowDialog(this, this.instruction, this.VariableNames, this.instruction.Application))
+            if (this.instruction != null)
             {
-                UpdateFromInstruction(instruction);
+                ApplicationJob? application = this.instruction.Application;
+                if (application != null && InstructionBaseDialog.ShowDialog(this, this.instruction, this.VariableNames ?? Array.Empty<string>(), application))
+                {
+                    UpdateFromInstruction(instruction);
+                }
             }
         }
 
-        private void lnkRemove_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void lnkRemove_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
         {
             RemoveInstruction();
         }

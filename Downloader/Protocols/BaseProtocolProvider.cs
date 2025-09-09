@@ -21,6 +21,8 @@ namespace MyDownloader.Extension.Protocols
 
         protected void SetProxy(WebRequest request)
         {
+            if (request == null) return;
+            
             if (HttpFtpProtocolExtension.parameters.UseProxy)
             {
                 WebProxy proxy = new WebProxy(HttpFtpProtocolExtension.parameters.ProxyAddress, HttpFtpProtocolExtension.parameters.ProxyPort);
@@ -29,10 +31,14 @@ namespace MyDownloader.Extension.Protocols
 
                 if (!String.IsNullOrEmpty(HttpFtpProtocolExtension.parameters.ProxyUserName))
                 {
-                    request.Proxy.Credentials = new NetworkCredential(
-                        HttpFtpProtocolExtension.parameters.ProxyUserName,
-                        HttpFtpProtocolExtension.parameters.ProxyPassword,
-                        HttpFtpProtocolExtension.parameters.ProxyDomain);
+                    WebProxy? innerProxy = request.Proxy as WebProxy;
+                    if (innerProxy != null)
+                    {
+                        innerProxy.Credentials = new NetworkCredential(
+                            HttpFtpProtocolExtension.parameters.ProxyUserName,
+                            HttpFtpProtocolExtension.parameters.ProxyPassword,
+                            HttpFtpProtocolExtension.parameters.ProxyDomain);
+                    }
                 }
             }
         }

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows.Forms;
 using CDBurnerXP.Forms;
 
@@ -13,6 +13,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the currently edited application.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ApplicationJob Application
         {
             get;
@@ -37,7 +38,8 @@ namespace Ketarin.Forms
             }
         }
 
-        public virtual SetupInstruction SetupInstruction
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public virtual SetupInstruction? SetupInstruction
         {
             set
             {
@@ -56,6 +58,7 @@ namespace Ketarin.Forms
 
             AcceptButton = bOK;
             CancelButton = bCancel;
+            Application = new ApplicationJob();
         }
 
         /// <summary>
@@ -65,7 +68,7 @@ namespace Ketarin.Forms
         /// <returns>true, if the user did not cancel</returns>
         public static bool ShowDialog(IWin32Window parent, SetupInstruction instruction, string[] currentVariables, ApplicationJob application)
         {
-            InstructionBaseDialog dialog = null;
+            InstructionBaseDialog? dialog = null;
 
             if (instruction is StartProcessInstruction)
             {
@@ -86,9 +89,9 @@ namespace Ketarin.Forms
 
             if (dialog != null)
             {
-                dialog.Application = application;
-                dialog.SetupInstruction = instruction;
-                dialog.VariableNames = currentVariables;
+                dialog.Application = application ?? new ApplicationJob();
+                dialog.SetupInstruction = instruction ?? new SetupInstruction();
+                dialog.VariableNames = currentVariables ?? new string[0];
                 if (dialog.ShowDialog(parent) == DialogResult.OK)
                 {
                     return true;

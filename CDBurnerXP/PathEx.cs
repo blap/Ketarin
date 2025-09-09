@@ -22,7 +22,7 @@ namespace CDBurnerXP.IO
         /// <summary>
         /// Determines whether or not hidden files are shown in Windows Explorer.
         /// </summary>
-        public static bool IsShowHiddenFilesEnabled
+        public static bool ShowHiddenFiles
         {
             get
             {
@@ -30,7 +30,8 @@ namespace CDBurnerXP.IO
                 {
                     RegistryKey key = Registry.CurrentUser;
                     key = key.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced");
-                    int value = Convert.ToInt16(key.GetValue("Hidden"));
+                    object? valueObj = key?.GetValue("Hidden");
+                    int value = (valueObj != null && valueObj is int) ? Convert.ToInt16(valueObj) : 0;
                     return (value == 1);
                 }
                 catch
@@ -43,7 +44,7 @@ namespace CDBurnerXP.IO
         #endregion
 
 
-        public static event EventHandler<GenericEventArgs<string>> FileCopying;
+        public static event EventHandler<GenericEventArgs<string>>? FileCopying;
 
         /// <summary>
         /// Determines whether a drive with the given drive letter is set in the unitmask.
@@ -63,11 +64,14 @@ namespace CDBurnerXP.IO
         {
             try
             {
-                RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer");
+                RegistryKey? key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer");
                 if (key == null) return false;
 
-                int noDrives = Convert.ToInt32(key.GetValue("NoDrives"));
-                int noViewOnDrives = Convert.ToInt32(key.GetValue("NoViewOnDrives"));
+                object? noDrivesObj = key.GetValue("NoDrives");
+                object? noViewOnDrivesObj = key.GetValue("NoViewOnDrives");
+                
+                int noDrives = noDrivesObj != null ? Convert.ToInt32(noDrivesObj) : 0;
+                int noViewOnDrives = noViewOnDrivesObj != null ? Convert.ToInt32(noViewOnDrivesObj) : 0;
 
                 return IsDriveInUnitmask(noDrives, driveLetter) || IsDriveInUnitmask(noViewOnDrives, driveLetter);
             }
@@ -109,7 +113,10 @@ namespace CDBurnerXP.IO
         {
             try
             {
-                DriveInfo info = new DriveInfo(Path.GetPathRoot(sourcePath));
+                string rootPath = Path.GetPathRoot(sourcePath);
+                if (string.IsNullOrEmpty(rootPath)) return false;
+                
+                DriveInfo info = new DriveInfo(rootPath);
                 return (info.DriveType == DriveType.Removable || info.DriveType == DriveType.CDRom);
             }
             catch
@@ -128,7 +135,11 @@ namespace CDBurnerXP.IO
             try
             {
                 if (sourcePath.StartsWith("\\\\")) return true;
-                DriveInfo info = new DriveInfo(Path.GetPathRoot(sourcePath));
+                
+                string rootPath = Path.GetPathRoot(sourcePath);
+                if (string.IsNullOrEmpty(rootPath)) return false;
+                
+                DriveInfo info = new DriveInfo(rootPath);
                 return (info.DriveType == DriveType.Network);
             }
             catch
@@ -147,8 +158,8 @@ namespace CDBurnerXP.IO
             // Only a file?
             if (File.Exists(sourceFolder))
             {
-                string targetDir = Path.GetDirectoryName(destFolder);
-                Directory.CreateDirectory(targetDir);
+                string? targetDir = Path.GetDirectoryName(destFolder);
+                Directory.CreateDirectory(targetDir ?? string.Empty);
                 if (FileCopying != null) FileCopying(null, new GenericEventArgs<string>(sourceFolder));
                 File.Copy(sourceFolder, destFolder, true);
                 return;
@@ -199,7 +210,8 @@ namespace CDBurnerXP.IO
                 else if (file.StartsWith(Path.DirectorySeparatorChar.ToString()))
                 {
                     // If path is rooted relatively, combine with playlist file location
-                    return Path.Combine(Path.GetPathRoot(basePath), file.TrimStart(Path.DirectorySeparatorChar));
+                    string? rootPath = Path.GetPathRoot(basePath);
+                    return Path.Combine(rootPath ?? string.Empty, file.TrimStart(Path.DirectorySeparatorChar));
                 }
                 else
                 {
@@ -208,7 +220,8 @@ namespace CDBurnerXP.IO
             }
             else
             {
-                return Path.Combine(Path.GetDirectoryName(basePath), file);
+                string? baseDir = Path.GetDirectoryName(basePath);
+                return Path.Combine(baseDir ?? string.Empty, file);
             }
         }
 
@@ -227,10 +240,10 @@ namespace CDBurnerXP.IO
 
         public static string AppendToFileName(string append, string filename)
         {
-            string path = Path.GetDirectoryName(filename);
+            string? path = Path.GetDirectoryName(filename);
             string ext = Path.GetExtension(filename);
             filename = Path.GetFileNameWithoutExtension(filename);
-            return Path.Combine(path, filename + append + ext);
+            return Path.Combine(path ?? string.Empty, filename + append + ext);
         }
 
         public static string ReplaceInvalidFileNameChars(string text)
@@ -342,7 +355,7 @@ namespace CDBurnerXP.IO
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
             oFileStream.Close();
             return false;
@@ -366,12 +379,49 @@ namespace CDBurnerXP.IO
             return false;
         }
 
+        public static string GetFileTypeDescription(string ext)
+        {
+            try
+            {
+                RegistryKey? rk = Registry.ClassesRoot.OpenSubKey(ext);
+                if (rk?.GetValue("") is string type)
+                {
+                    RegistryKey? exta = rk.OpenSubKey(type);
+                    if (exta == null)
+                    {
+                        return "*." + ext;
+                    }
+
+                    if (exta.GetValue("") is string desc)
+                    {
+                        return desc;
+                    }
+
+                    RegistryKey? exta2 = rk.OpenSubKey((string?)exta.GetValue("") ?? string.Empty);
+                    if (exta2 == null)
+                    {
+                        return "*." + ext;
+                    }
+
+                    if (exta2.GetValue("") is string desc2)
+                    {
+                        return desc2;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return "*." + ext;
+        }
+
         public static string GetFileTypeFromExt(string ext)
         {
             RegistryKey rk = Registry.ClassesRoot;
             try
             {
-                RegistryKey exta = rk.OpenSubKey(ext);
+                RegistryKey? exta = rk.OpenSubKey(ext);
                 if (exta == null)
                 {
                     return "";
@@ -380,12 +430,12 @@ namespace CDBurnerXP.IO
                 {
                     return "";
                 }
-                RegistryKey exta2 = rk.OpenSubKey((string)exta.GetValue(""));
+                RegistryKey? exta2 = rk.OpenSubKey((string)exta.GetValue("")!);
                 if (exta2 == null)
                 {
                     return "";
                 }
-                return exta2.GetValue("") as string;
+                return exta2.GetValue("") as string ?? string.Empty;
             }
             catch (SecurityException)
             {
@@ -466,7 +516,11 @@ namespace CDBurnerXP.IO
                     key = key.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders");
                     if ((key != null) & (key.GetValue(folderName) != null))
                     {
-                        result = key.GetValue(folderName).ToString().TrimEnd(Path.DirectorySeparatorChar);
+                        object? value = key.GetValue(folderName);
+                        if (value != null)
+                        {
+                            result = value.ToString().TrimEnd(Path.DirectorySeparatorChar);
+                        }
                     }
                 }
                 catch (Exception)
@@ -476,6 +530,37 @@ namespace CDBurnerXP.IO
             }
 
             return result;
+        }
+
+        public static string GetSpecialFolder(string folderName)
+        {
+            try
+            {
+                RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders");
+                if (key != null)
+                {
+                    object? value = key.GetValue(folderName);
+                    if (value is string shellFolder)
+                    {
+                        return shellFolder;
+                    }
+                }
+
+                key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders");
+                if (key != null)
+                {
+                    object? value = key.GetValue(folderName);
+                    if (value is string userShellFolder)
+                    {
+                        return Environment.ExpandEnvironmentVariables(userShellFolder);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return string.Empty;
         }
 
         public static long TryGetFileSize(string path)
@@ -493,6 +578,29 @@ namespace CDBurnerXP.IO
             {
                 return 0;
             }
+        }
+
+        /// <summary>
+        /// Returns a valid filename which does not yet exist.
+        /// </summary>
+        public static string GetNonExistingFilename(string filename)
+        {
+            if (!File.Exists(filename)) return filename;
+
+            string? path = Path.GetDirectoryName(filename);
+            string? ext = Path.GetExtension(filename);
+            filename = Path.GetFileNameWithoutExtension(filename);
+
+            int counter = 1;
+            string newFilename;
+            do
+            {
+                newFilename = Path.Combine(path ?? string.Empty, filename + " (" + counter + ")" + ext);
+                counter++;
+            }
+            while (File.Exists(newFilename));
+
+            return newFilename;
         }
     }
 }

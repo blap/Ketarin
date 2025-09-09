@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Win32;
@@ -19,7 +19,7 @@ namespace Ketarin
         {
             get;
             set;
-        }
+        } = string.Empty;
 
         public override string Name
         {

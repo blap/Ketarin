@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace Ketarin.Forms
@@ -7,6 +8,7 @@ namespace Ketarin.Forms
     {
         #region Properties
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string ColumnName
         {
             get
@@ -19,6 +21,7 @@ namespace Ketarin.Forms
             }
         }
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string ColumnValue
         {
             get

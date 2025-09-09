@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
@@ -50,12 +50,44 @@ namespace CDBurnerXP
         /// <param name="otherText">Reduce the available by the width of this text</param>
         public static string CompactString(string myString, int width, Font font, string otherText)
         {
-            string Result = string.Copy(myString);
+            string result = new string(myString); // Replace string.Copy with new string constructor
             width -= TextRenderer.MeasureText(otherText, font).Width;
-            TextRenderer.MeasureText(Result, font, new Size(width, 0), TextFormatFlags.PathEllipsis | TextFormatFlags.ModifyString);
-            return Result;
+            
+            // Replace TextFormatFlags.ModifyString with a safer approach
+            Size textSize = TextRenderer.MeasureText(result, font, new Size(width, 0), TextFormatFlags.PathEllipsis);
+            if (TextRenderer.MeasureText(result, font).Width > width)
+            {
+                // Manually truncate and add ellipsis
+                result = TruncateWithEllipsis(result, width, font);
+            }
+            return result;
         }
-
+        
+        /// <summary>
+        /// Truncates a string and adds ellipsis (...) to fit within a specified width
+        /// </summary>
+        private static string TruncateWithEllipsis(string text, int maxWidth, Font font)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            
+            string ellipsis = "...";
+            Size ellipsisSize = TextRenderer.MeasureText(ellipsis, font);
+            
+            if (TextRenderer.MeasureText(text, font).Width <= maxWidth)
+                return text;
+                
+            int maxTextWidth = maxWidth - ellipsisSize.Width;
+            if (maxTextWidth <= 0) return ellipsis;
+            
+            string truncated = text;
+            while (TextRenderer.MeasureText(truncated, font).Width > maxTextWidth && truncated.Length > 0)
+            {
+                truncated = truncated.Substring(0, truncated.Length - 1);
+            }
+            
+            return truncated + ellipsis;
+        }
+        
         /// <summary>
         /// Converts a string to its url encoded equivalent. Encodes more chars than necessary, but that won't hurt.
         /// </summary>

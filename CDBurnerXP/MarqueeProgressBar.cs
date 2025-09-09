@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Forms;
 #if CDBXP
 using Microsoft.Win32.Windows7;
@@ -12,7 +12,8 @@ namespace CDBurnerXP.Controls
 
         private bool m_ShowMarquee = false;
         private bool m_ShowInTaskbar = true;
-        private Timer m_Timer = new Timer();
+        // Specify the full namespace to avoid ambiguity
+        private System.Windows.Forms.Timer m_Timer = new System.Windows.Forms.Timer();
 
         #region "Properties"
 
@@ -46,29 +47,35 @@ namespace CDBurnerXP.Controls
             set { m_ShowInTaskbar = value; }
         }
 
+        private int m_Value = 0;
+        
+        [Browsable(false)]
         public new int Value
         {
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             set
             {
-                base.Value = Math.Max(Minimum, Math.Min(Maximum, value));
+                m_Value = Math.Max(Minimum, Math.Min(Maximum, value));
+                base.Value = m_Value;
                 #if CDBXP
                 if (m_ShowInTaskbar)
                 {
-                    if (base.Value == 0)
+                    if (m_Value == 0)
                     {
                         TaskBarExtensions.SetProgressState(ProgressState.NoProgress);
                     }
                     else
                     {
                         TaskBarExtensions.SetProgressState(m_ShowMarquee ? ProgressState.Indeterminate : ProgressState.Normal);
-                        TaskBarExtensions.SetProgressValue((ulong)base.Value, (ulong)Maximum);
+                        TaskBarExtensions.SetProgressValue((ulong)m_Value, (ulong)Maximum);
                     }
                 }
                 #endif
             }
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             get
             {
-                return base.Value;
+                return m_Value;
             }
         }
 

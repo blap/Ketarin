@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
@@ -19,7 +19,7 @@ namespace Ketarin
         /// Gets the human readable representation of the key combination required
         /// to invoke this hotkey.
         /// </summary>
-        public string Shortcut { get; private set; }
+        public string Shortcut { get; private set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the name of the hotkey action.
@@ -128,7 +128,7 @@ namespace Ketarin
 
             foreach (Hotkey hotkey in hotkeys)
             {
-                hotkey.Shortcut = Settings.GetValue("Hotkey: " + hotkey.Name, string.Empty) as string;
+                hotkey.Shortcut = Settings.GetValue("Hotkey: " + hotkey.Name, string.Empty) as string ?? string.Empty;
             }
 
             return hotkeys;

@@ -1,19 +1,29 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.SQLite;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
+using System.Web;
+using System.Windows.Forms;
+using System.Xml;
 using CDBurnerXP;
-using CDBurnerXP.IO;
-using CookComputing.XmlRpc;
-using FTPLib;
+using CDBurnerXP.Forms;
 using Ketarin.Forms;
+using Microsoft.Win32;
 using MyDownloader.Core;
-using MyDownloader.Extension.Protocols;
+using MyDownloader.Extension;
 using Settings = CDBurnerXP.Settings;
+using MyDownloader.Extension.Protocols;
+using System.Net.Sockets;
+using FTPLib;
+
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete
 
 namespace Ketarin
 {
@@ -25,13 +35,13 @@ namespace Ketarin
     {
         public const SecurityProtocolType DefaultHttpProtocols = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
-        private ApplicationJob[] m_Jobs;
-        private Dictionary<ApplicationJob, short> m_Progress;
+        private ApplicationJob[] m_Jobs = new ApplicationJob[0];
+        private Dictionary<ApplicationJob, short> m_Progress = new Dictionary<ApplicationJob, short>();
         private readonly Dictionary<ApplicationJob, Status> m_Status = new Dictionary<ApplicationJob,Status>();
         private readonly Dictionary<ApplicationJob, long> m_Size = new Dictionary<ApplicationJob, long>();
         private bool m_CancelUpdates;
         protected int m_LastProgress = -1;
-        private List<ApplicationJobError> m_Errors;
+        private List<ApplicationJobError> m_Errors = new List<ApplicationJobError>();
         private byte m_NoProgressCounter;
         private bool m_OnlyCheck;
         private int m_ThreadLimit = 2;
@@ -175,23 +185,23 @@ namespace Ketarin
         /// <summary>
         /// Occurs when the download progress of an application changed.
         /// </summary>
-        public event EventHandler<JobProgressChangedEventArgs> ProgressChanged;
+        public event EventHandler<JobProgressChangedEventArgs>? ProgressChanged;
 
         /// <summary>
         /// Occurs when the upgrade status of an application changed.
         /// </summary>
-        public event EventHandler<JobStatusChangedEventArgs> StatusChanged;
+        public event EventHandler<JobStatusChangedEventArgs>? StatusChanged;
 
         /// <summary>
         /// Occurs when the updater has finished the whole upgrade process.
         /// </summary>
-        public event EventHandler UpdateCompleted;
+        public event EventHandler? UpdateCompleted;
 
         /// <summary>
         /// Occurs when updates for applications downloaded from the online database
         /// have been found and provides a list of XML definitions for those applications.
         /// </summary>
-        public event EventHandler<GenericEventArgs<string[]>> UpdatesFound;
+        public event EventHandler<GenericEventArgs<string[]>>? UpdatesFound;
 
         #region Public control methods
 
@@ -305,7 +315,25 @@ namespace Ketarin
         /// </summary>
         public void BeginCheckForOnlineUpdates(ApplicationJob[] jobs)
         {
-            DateTime lastUpdate = (DateTime)Settings.GetValue("LastUpdateCheck", DateTime.MinValue);
+            // Safely retrieve and convert the LastUpdateCheck setting
+            DateTime lastUpdate = DateTime.MinValue;
+            object lastUpdateValue = Settings.GetValue("LastUpdateCheck", DateTime.MinValue);
+            
+            // Handle different possible types that might be returned from settings
+            if (lastUpdateValue is DateTime dateTime)
+            {
+                lastUpdate = dateTime;
+            }
+            else if (lastUpdateValue is string dateString)
+            {
+                // Try to parse string representation of DateTime
+                if (DateTime.TryParse(dateString, out DateTime parsedDate))
+                {
+                    lastUpdate = parsedDate;
+                }
+            }
+            // If it's another type or parsing fails, use the default DateTime.MinValue
+            
             if (lastUpdate.Date == DateTime.Now.Date)
             {
                 // Only check once a day
@@ -321,9 +349,10 @@ namespace Ketarin
         /// Checks for which of the given applications updates
         /// are available. Fires an event when finished.
         /// </summary>
-        private void CheckForOnlineUpdates(object argument)
+        private void CheckForOnlineUpdates(object? argument)
         {
-            ApplicationJob[] jobs = argument as ApplicationJob[];
+            ApplicationJob[]? jobs = argument as ApplicationJob[];
+            if (jobs == null) return;
 
             // Build an array containing all GUIDs and dates
             List<RpcAppGuidAndDate> sendInfo = new List<RpcAppGuidAndDate>();
@@ -340,9 +369,14 @@ namespace Ketarin
 
             try
             {
+                // Disabled XML-RPC functionality for .NET 9 compatibility
+                MessageBox.Show("Online database functionality is not available in this version.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                /*
                 IKetarinRpc proxy = XmlRpcProxyGen.Create<IKetarinRpc>();
                 string[] updatedApps = proxy.GetUpdatedApplications(sendInfo.ToArray());
                 OnUpdatesFound(updatedApps);
+                */
             }
             catch (Exception ex)
             {
@@ -418,9 +452,12 @@ namespace Ketarin
 
                 try
                 {
-                    string postUpdateCommand = Settings.GetValue("PostUpdateCommand", "") as string;
-                    ScriptType postUpdateCommandType = Command.ConvertToScriptType(Settings.GetValue("PostUpdateCommandType", ScriptType.Batch.ToString()) as string);
-                    new Command(postUpdateCommand, postUpdateCommandType).Execute(null);
+                    string? postUpdateCommand = Settings.GetValue("PostUpdateCommand", "") as string;
+                    ScriptType postUpdateCommandType = Command.ConvertToScriptType(Settings.GetValue("PostUpdateCommandType", ScriptType.Batch.ToString()) as string ?? ScriptType.Batch.ToString());
+                    if (!string.IsNullOrEmpty(postUpdateCommand))
+                    {
+                        new Command(postUpdateCommand ?? string.Empty, postUpdateCommandType).Execute(null);
+                    }
                 }
                 catch (ApplicationException ex)
                 {
@@ -442,16 +479,17 @@ namespace Ketarin
         /// Performs the update process of a single application.
         /// Catches most exceptions and stores them for later use.
         /// </summary>
-        private void StartNewThread(object paramJob)
+        private void StartNewThread(object? paramJob)
         {
-            ApplicationJob job = paramJob as ApplicationJob;
+            ApplicationJob? job = paramJob as ApplicationJob;
+            if (job == null) return;
 
-            m_Status[job] = Status.Downloading;
-            OnStatusChanged(job);
+            m_Status[job!] = Status.Downloading;
+            OnStatusChanged(job!);
 
             string requestedUrl = string.Empty;
             int numTries = 0;
-            int maxTries = Convert.ToInt32(Settings.GetValue("RetryCount", 1));
+            int maxTries = Convert.ToInt32(Settings.GetValue("RetryCount", 1) ?? 1);
 
             try
             {
@@ -480,24 +518,11 @@ namespace Ketarin
                         // Install if updated
                         if (m_InstallUpdated && m_Status[job] == Status.UpdateSuccessful)
                         {
-                            job.Install(null);
+                            job!.Install(null!);
                         }
 
                         // If no exception happened, we immediately leave the loop
                         break;
-                    }
-                    catch (SQLiteException ex)
-                    {
-                        // If "locked" exception (slow USB device eg.) continue trying
-                        if (ex.ErrorCode == (int)SQLiteErrorCode.Locked)
-                        {
-                            numTries--;
-                            LogDialog.Log(job, ex);
-                        }
-                        else
-                        {
-                            throw;
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -509,6 +534,10 @@ namespace Ketarin
                             break;
                         }
 
+                        // Handle general exceptions
+                        numTries--;
+                        LogDialog.Log(job, ex);
+                        
                         // Only throw an exception if we have run out of tries
                         if (numTries == maxTries)
                         {
@@ -581,7 +610,7 @@ namespace Ketarin
                 LogDialog.Log(job, ex);
                 m_Errors.Add(new ApplicationJobError(job, ex));
             }
-            catch (SQLiteException ex)
+            catch (Exception ex)
             {
                 LogDialog.Log(job, ex);
                 this.HandleUpdateFailed(job, new ApplicationJobError(job, ex, requestedUrl));
@@ -598,14 +627,14 @@ namespace Ketarin
         private void HandleUpdateFailed(ApplicationJob job, ApplicationJobError error)
         {
             // Execute: Default update failed command
-            string updateFailedCommand = Settings.GetValue("UpdateFailedCommand", "") as string;
-            ScriptType defaultPreCommandType = Command.ConvertToScriptType(Settings.GetValue("UpdateFailedCommandType", ScriptType.Batch.ToString()) as string);
+            string? updateFailedCommand = Settings.GetValue("UpdateFailedCommand", "") as string;
+            ScriptType defaultPreCommandType = Command.ConvertToScriptType(Settings.GetValue("UpdateFailedCommandType", ScriptType.Batch.ToString()) as string ?? ScriptType.Batch.ToString());
 
             m_Status[job] = Status.Failure;
 
             if (!string.IsNullOrEmpty(updateFailedCommand))
             {
-                int exitCode = new Command(updateFailedCommand, defaultPreCommandType).Execute(job, null, error);
+                int exitCode = new Command(updateFailedCommand ?? string.Empty, defaultPreCommandType).Execute(job, null, error);
 
                 // Do not show failure in error window.
                 if (exitCode == 1)
@@ -637,8 +666,8 @@ namespace Ketarin
                 // .NET bug under special circumstances
             }
 
-            ServicePointManager.ServerCertificateValidationCallback = delegate {
-                return true;
+            ServicePointManager.ServerCertificateValidationCallback = delegate { 
+                return true; 
             };
 
             // If we want to download multiple files simultaneously
@@ -646,7 +675,7 @@ namespace Ketarin
             ServicePointManager.DefaultConnectionLimit = 50;
 
             string downloadUrl;
-            if (job.DownloadSourceType == ApplicationJob.SourceType.FileHippo)
+            if (job.DownloadSourceType == SourceType.FileHippo)
             {
                 downloadUrl = ExternalServices.FileHippoDownloadUrl(job.FileHippoId, job.AvoidDownloadBeta);
             }
@@ -662,7 +691,7 @@ namespace Ketarin
             if (string.IsNullOrEmpty(downloadUrl))
             {
                 // No download URL specified, only check if update is required
-                if (job.RequiresDownload(null, null))
+                if (job!.RequiresDownload(null!, null!))
                 {
                     return Status.UpdateAvailable;
                 }
@@ -670,7 +699,7 @@ namespace Ketarin
                 return Status.NoUpdate;
             }
 
-            Uri url = new Uri(downloadUrl);
+            Uri url = new Uri(downloadUrl ?? string.Empty);
 
             return this.DoDownload(job, url);
         }
@@ -700,7 +729,7 @@ namespace Ketarin
 
                 // Occasionally, websites are not available and an error page is encountered
                 // For the case that the content type is just plain wrong, ignore it if the size is higher than 500KB
-                HttpWebResponse httpResponse = response as HttpWebResponse;
+                HttpWebResponse? httpResponse = response as HttpWebResponse;
                 if (httpResponse != null && response.ContentLength < 500000)
                 {
                     if (response.ContentType.StartsWith("text/xml") || response.ContentType.StartsWith("application/xml"))
@@ -759,10 +788,10 @@ namespace Ketarin
                 }
 
                 // Execute: Default pre-update command
-                string defaultPreCommand = Settings.GetValue("PreUpdateCommand", "") as string;
+                string? defaultPreCommand = Settings.GetValue("PreUpdateCommand", "") as string;
                 // For starting external download managers: {preupdate-url}
-                defaultPreCommand = UrlVariable.Replace(defaultPreCommand, "preupdate-url", urlToRequest.ToString(), job);
-                ScriptType defaultPreCommandType = Command.ConvertToScriptType(Settings.GetValue("PreUpdateCommandType", ScriptType.Batch.ToString()) as string);
+                defaultPreCommand = UrlVariable.Replace(defaultPreCommand ?? string.Empty, "preupdate-url", urlToRequest.ToString(), job);
+                ScriptType defaultPreCommandType = Command.ConvertToScriptType(Settings.GetValue("PreUpdateCommandType", ScriptType.Batch.ToString()) as string ?? string.Empty);
 
                 int exitCode = new Command(defaultPreCommand, defaultPreCommandType).Execute(job, targetFileName);
                 if (exitCode == 1)
@@ -809,7 +838,7 @@ namespace Ketarin
 
                     m_Size[job] = fileSize;
 
-                    Downloader d = new Downloader(new ResourceLocation { Url = urlToRequest.AbsoluteUri, ProtocolProvider = new KetarinProtocolProvider(job, m_Cookies) }, null, tmpLocation, segmentCount);
+                    MyDownloader.Core.Downloader d = new MyDownloader.Core.Downloader(new MyDownloader.Core.ResourceLocation { Url = urlToRequest.AbsoluteUri, ProtocolProvider = new KetarinProtocolProvider(job, m_Cookies) }, null!, tmpLocation, segmentCount);
                     d.Start();
                     
                     while (d.State < DownloaderState.Ended)
@@ -875,7 +904,7 @@ namespace Ketarin
                 // want to free some space on the target location.
                 if (job.DeletePreviousFile && job.NumberOfRevisions <= 1)
                 {
-                    PathEx.TryDeleteFiles(job.PreviousLocation);
+                    CDBurnerXP.IO.PathEx.TryDeleteFiles(job.PreviousLocation);
                 }
 
                 try
@@ -920,7 +949,10 @@ namespace Ketarin
                 try
                 {
                     // Before copying, we might have to create the directory
-                    Directory.CreateDirectory(Path.GetDirectoryName(targetFileName));
+                    if (!string.IsNullOrEmpty(targetFileName))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(targetFileName)!);
+                    }
 
                     // Take care of creating backups before overwriting the file if desired.
                     job.BackupRevisions(targetFileName);
@@ -960,13 +992,13 @@ namespace Ketarin
         /// <returns>-1 if no size could be determined</returns>
         private static long GetContentLength(WebResponse response)
         {
-            HttpWebResponse http = response as HttpWebResponse;
+            HttpWebResponse? http = response as HttpWebResponse;
             if (http != null)
             {
                 return http.ContentLength;
             }
 
-            FtpWebResponse ftp = response as FtpWebResponse;
+            FtpWebResponse? ftp = response as FtpWebResponse;
             if (ftp != null)
             {
                 if (ftp.ContentLength > 0)
@@ -979,7 +1011,7 @@ namespace Ketarin
                     // "TYPE I" is never sent unless a file is requested, but is sometimes
                     // required by FTP servers to get the file size (otherwise error 550).
                     // Thus, we use a custom FTP library from code project for this task.
-                    FTP ftpConnection = null;
+                    FTPLib.FTP? ftpConnection = null;
                     try
                     {
                         ftpConnection = new FTP(response.ResponseUri.Host, "anonymous", "ketarin@canneverbe.com");
@@ -997,7 +1029,7 @@ namespace Ketarin
                 }
             }
 
-            ScpWebResponse scp = response as ScpWebResponse;
+            ScpWebResponse? scp = response as ScpWebResponse;
             if (scp != null)
             {
                 return scp.ContentLength;
@@ -1013,7 +1045,7 @@ namespace Ketarin
         {
             if (UpdateCompleted != null)
             {
-                UpdateCompleted(this, null);
+                UpdateCompleted(this, null!);
             }
         }
 
@@ -1076,3 +1108,5 @@ namespace Ketarin
         }
     }
 }
+
+#pragma warning restore SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete

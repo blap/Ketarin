@@ -85,15 +85,15 @@ namespace FTPLib
 		/// <summary>
 		/// IP address or hostname to connect to
 		/// </summary>
-		public string server;
+		public string? server;
 		/// <summary>
 		/// Username to login as
 		/// </summary>
-		public string user;
+		public string? user;
 		/// <summary>
 		/// Password for account
 		/// </summary>
-		public string pass;
+		public string? pass;
 		/// <summary>
 		/// Port number the FTP server is listening on
 		/// </summary>
@@ -107,17 +107,17 @@ namespace FTPLib
 
 		#region Private Variables
 		
-		private string messages; // server messages
-		private string responseStr; // server response if the user wants it.
+		private string messages = ""; // server messages
+		private string? responseStr; // server response if the user wants it.
 		private bool passive_mode;		// #######################################
 		private long bytes_total; // upload/download info if the user wants it.
 		private long file_size; // gets set when an upload or download takes place
-		private Socket main_sock;
-		private IPEndPoint main_ipEndPoint;
-		private Socket listening_sock;
-		private Socket data_sock;
-		private IPEndPoint data_ipEndPoint;
-		private FileStream file;
+		private Socket? main_sock;
+		private IPEndPoint? main_ipEndPoint;
+		private Socket? listening_sock;
+		private Socket? data_sock;
+		private IPEndPoint? data_ipEndPoint;
+		private FileStream? file;
 		private int response;
 		private string bucket;
 		
@@ -129,17 +129,8 @@ namespace FTPLib
 		/// </summary>
 		public FTP()
 		{
-			server = null;
-			user = null;
-			pass = null;
 			port = 21;
 			passive_mode = true;		// #######################################
-			main_sock = null;
-			main_ipEndPoint = null;
-			listening_sock = null;
-			data_sock = null;
-			data_ipEndPoint = null;
-			file = null;
 			bucket = "";
 			bytes_total = 0;
 			timeout = 10000;	// 10 seconds
@@ -158,12 +149,6 @@ namespace FTPLib
 			this.pass = pass;
 			port = 21;
 			passive_mode = true;		// #######################################
-			main_sock = null;
-			main_ipEndPoint = null;
-			listening_sock = null;
-			data_sock = null;
-			data_ipEndPoint = null;
-			file = null;
 			bucket = "";
 			bytes_total = 0;
 			timeout = 10000;	// 10 seconds
@@ -183,12 +168,6 @@ namespace FTPLib
 			this.pass = pass;
 			this.port = port;
 			passive_mode = true;		// #######################################
-			main_sock = null;
-			main_ipEndPoint = null;
-			listening_sock = null;
-			data_sock = null;
-			data_ipEndPoint = null;
-			file = null;
 			bucket = "";
 			bytes_total = 0;
 			timeout = 10000;	// 10 seconds
@@ -240,7 +219,7 @@ namespace FTPLib
 		{
 			get
 			{
-				return responseStr;
+				return responseStr ?? string.Empty;
 			}
 		}
 		/// <summary>
@@ -311,7 +290,7 @@ namespace FTPLib
 				Console.WriteLine("\r" + command);
 #endif
 
-			main_sock.Send(cmd, cmd.Length, 0);
+			main_sock?.Send(cmd, cmd.Length, 0);
 		}
 
 
@@ -321,7 +300,7 @@ namespace FTPLib
 			long bytesgot;
 			int msecs_passed = 0;		// #######################################
 
-			while(main_sock.Available < 1)
+			while(main_sock != null && main_sock.Available < 1)
 			{
 				System.Threading.Thread.Sleep(50);
 				msecs_passed += 50;
@@ -335,7 +314,7 @@ namespace FTPLib
 				}
 			}
 
-			while(main_sock.Available > 0)
+			while(main_sock != null && main_sock.Available > 0)
 			{
 				bytesgot = main_sock.Receive(bytes, 512, 0);
 				bucket += Encoding.ASCII.GetString(bytes, 0, (int)bytesgot);
@@ -424,14 +403,30 @@ namespace FTPLib
 				{
 					int i1, i2;
 
-					i1 = responseStr.IndexOf('(') + 1;
-					i2 = responseStr.IndexOf(')') - i1;
-					pasv = responseStr.Substring(i1, i2).Split(',');
+					i1 = responseStr?.IndexOf('(') ?? -1;
+					if (i1 >= 0)
+					{
+						i1 += 1;
+						int endParenIndex = responseStr?.IndexOf(')', i1) ?? -1;
+						if (endParenIndex > i1)
+						{
+							i2 = endParenIndex - i1;
+							pasv = (responseStr?.Substring(i1, i2) ?? string.Empty).Split(',');
+						}
+						else
+						{
+							throw new Exception("Malformed PASV response: " + (responseStr ?? string.Empty));
+						}
+					}
+					else
+					{
+						throw new Exception("Malformed PASV response: " + (responseStr ?? string.Empty));
+					}
 				}
 				catch(Exception)
 				{
 					Disconnect();
-					throw new Exception("Malformed PASV response: " + responseStr);
+					throw new Exception("Malformed PASV response: " + (responseStr ?? string.Empty));
 				}
 
 				if (pasv.Length < 6)
@@ -497,7 +492,7 @@ namespace FTPLib
 #endif
 					// for the PORT command we need to send our IP address; let's extract it
 					// from the LocalEndPoint of the main socket, that's already connected
-					string sLocAddr = main_sock.LocalEndPoint.ToString();
+					string sLocAddr = main_sock?.LocalEndPoint?.ToString() ?? string.Empty;
 					int ix = sLocAddr.IndexOf(':');
 					if (ix < 0)
 					{
@@ -507,8 +502,8 @@ namespace FTPLib
 					// let the system automatically assign a port number (setting port = 0)
 					System.Net.IPEndPoint localEP = new IPEndPoint(IPAddress.Parse(sIPAddr), 0);
 
-					listening_sock.Bind(localEP);
-					sLocAddr = listening_sock.LocalEndPoint.ToString();
+					listening_sock?.Bind(localEP);
+					sLocAddr = listening_sock?.LocalEndPoint?.ToString() ?? string.Empty;
 					ix = sLocAddr.IndexOf(':');
 					if (ix < 0)
 					{
@@ -520,9 +515,9 @@ namespace FTPLib
 #endif
 					// start to listen for a connection request from the host (note that
 					// Listen is not blocking) and send the PORT command
-					listening_sock.Listen(1);
+					listening_sock?.Listen(1);
 					string sPortCmd = string.Format("PORT {0},{1},{2}", 
-													sIPAddr.Replace('.', ','),
+													(sIPAddr ?? string.Empty).Replace('.', ','),
 													nPort / 256, nPort % 256);
 					SendCommand(sPortCmd);
 					ReadResponse();
@@ -547,8 +542,8 @@ namespace FTPLib
 #if (FTP_DEBUG)
 				Console.WriteLine("Accepting the data connection.");
 #endif
-				data_sock = listening_sock.Accept();	// Accept is blocking
-				listening_sock.Close();
+				data_sock = listening_sock?.Accept();	// Accept is blocking
+				listening_sock?.Close();
 				listening_sock = null;
 
 				if (data_sock == null)
@@ -724,7 +719,7 @@ namespace FTPLib
 			}
 			ConnectDataSocket();		// #######################################
 
-			while(data_sock.Available < 1)
+			while(data_sock?.Available < 1)
 			{
 				System.Threading.Thread.Sleep(50);
 				msecs_passed += 50;
@@ -743,9 +738,9 @@ namespace FTPLib
 				}
 			}
 
-			while(data_sock.Available > 0)
+			while((data_sock?.Available ?? 0) > 0)
 			{
-				bytesgot = data_sock.Receive(bytes, bytes.Length, 0);
+				bytesgot = data_sock?.Receive(bytes, bytes.Length, 0) ?? 0;
 				file_list += Encoding.ASCII.GetString(bytes, 0, (int)bytesgot);
 				System.Threading.Thread.Sleep(50); // *shrug*, sometimes there is data comming but it isn't there yet.
 			}
@@ -825,7 +820,7 @@ namespace FTPLib
 				throw new Exception(responseStr);
 			}
 			
-			return (this.responseStr.Substring(4));
+			return (this.responseStr?.Substring(4) ?? string.Empty);
 		}
 		/// <summary>
 		/// GetFileDate will query the ftp server for the date of the remote file.
@@ -869,7 +864,8 @@ namespace FTPLib
 			string pwd;
 			try
 			{
-				pwd = responseStr.Substring(responseStr.IndexOf("\"", 0) + 1);//5);
+				int startIndex = responseStr?.IndexOf("\"", 0) + 1 ?? 0;
+				pwd = (responseStr?.Substring(startIndex) ?? string.Empty);//5);
 				pwd = pwd.Substring(0, pwd.LastIndexOf("\""));
 				pwd = pwd.Replace("\"\"", "\""); // directories with quotes in the name come out as "" from the server
 			}
@@ -1003,7 +999,7 @@ namespace FTPLib
 				throw new Exception(responseStr);
 			}
             
-			return Int64.Parse(responseStr.Substring(4));
+			return Int64.Parse(responseStr?.Substring(4) ?? "0");
 		}
 		/// <summary>
 		/// Open an upload with no resume if it already exists
@@ -1194,12 +1190,11 @@ namespace FTPLib
 			{
 				bytes_got = file.Read(bytes, 0, bytes.Length);
 				bytes_total += bytes_got;
-				data_sock.Send(bytes, (int)bytes_got, 0);
-
+				data_sock?.Send(bytes, (int)bytes_got, 0);
 				if(bytes_got <= 0)
 				{
 					// the upload is complete or an error occured
-					file.Close();
+					file?.Close();
 					file = null;
 				
 					CloseDataSocket();
@@ -1220,10 +1215,9 @@ namespace FTPLib
 			{
 				file.Close();
 				file = null;
-				CloseDataSocket();
 				ReadResponse();
 				SetBinaryMode(false);
-				throw ex;
+				throw;
 			}
 
 			return bytes_got;
@@ -1239,13 +1233,13 @@ namespace FTPLib
 			
 			try
 			{
-				bytes_got = data_sock.Receive(bytes, bytes.Length, 0);
+				bytes_got = data_sock?.Receive(bytes, bytes.Length, 0) ?? 0;
 
 				if(bytes_got <= 0)
 				{
 					// the download is done or an error occured
 					CloseDataSocket();
-					file.Close();
+					file?.Close();
 					file = null;
 				
 					ReadResponse();
@@ -1269,11 +1263,11 @@ namespace FTPLib
 			catch(Exception ex)
 			{
 				CloseDataSocket();
-				file.Close();
+				file?.Close();
 				file = null;
 				ReadResponse();
 				SetBinaryMode(false);
-				throw ex;
+				throw;
 			}
 
 			return bytes_got;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -21,17 +21,17 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets the command text.
         /// </summary>
-        public string Text { get; set; }
+        public string Text { get; set; } = string.Empty;
 
-        public Command(string text, ScriptType type)
+        public Command(string? text, ScriptType type)
         {
-            this.Text = text;
+            this.Text = text ?? string.Empty;
             this.Type = type;
         }
 
-        public Command(string text, string type)
+        public Command(string? text, string type)
         {
-            this.Text = text;
+            this.Text = text ?? string.Empty;
             this.Type = ConvertToScriptType(type);
         }
 
@@ -39,7 +39,7 @@ namespace Ketarin
         /// Executes the command.
         /// </summary>
         /// <param name="targetFileName">Content for variable "{url:...}"</param>
-        public virtual int Execute(ApplicationJob application, string targetFileName = null, ApplicationJobError errorInfo = null)
+        public virtual int Execute(ApplicationJob? application, string? targetFileName = null, ApplicationJobError? errorInfo = null)
         {
             switch (Type)
             {
@@ -54,7 +54,7 @@ namespace Ketarin
                     return Conversion.ToInt(psScript.LastOutput);
 
                 default:
-                    return ExecuteBatchCommand(application, this.Text, targetFileName);
+                    return ExecuteBatchCommand(application, this.Text, targetFileName ?? string.Empty);
             }
 
             return 0;
@@ -64,7 +64,7 @@ namespace Ketarin
         /// Executes a given command for the given application (also resolves variables).
         /// </summary>
         /// <returns>Exit code of the command, if not run in background</returns>
-        private static int ExecuteBatchCommand(ApplicationJob job, string commandText, string targetFileName)
+        private static int ExecuteBatchCommand(ApplicationJob? job, string commandText, string? targetFileName)
         {
             // Ignore empty commands
             if (string.IsNullOrEmpty(commandText)) return 0;
@@ -72,12 +72,13 @@ namespace Ketarin
             commandText = commandText.Replace("\r\n", "\n");
 
             // Job specific data
-            commandText = job != null ? job.Variables.ReplaceAllInString(commandText, DateTime.MinValue, targetFileName, false) : UrlVariable.GlobalVariables.ReplaceAllInString(commandText);
+            commandText = job != null ? job.Variables.ReplaceAllInString(commandText, DateTime.MinValue, targetFileName ?? string.Empty, false) : UrlVariable.GlobalVariables.ReplaceAllInString(commandText);
 
             // Replace variable: root
             try
             {
-                commandText = UrlVariable.Replace(commandText, "root", Path.GetPathRoot(Application.StartupPath), job);
+                string? rootPath = Path.GetPathRoot(Application.StartupPath);
+                commandText = UrlVariable.Replace(commandText, "root", rootPath ?? string.Empty, job);
             }
             catch (ArgumentException) { }
 
@@ -94,8 +95,10 @@ namespace Ketarin
             bool executeBackground = commandText.EndsWith("&");
             commandText = commandText.TrimEnd('&');
 
-            using (Process proc = Process.Start(cmdExe))
+            using (Process? proc = Process.Start(cmdExe))
             {
+                if (proc == null) return 0;
+                
                 StringBuilder commandResult = new StringBuilder();
 
                 // Set the event handler to asynchronously read the command output.

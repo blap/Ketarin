@@ -1,4 +1,4 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 
 namespace Ketarin
@@ -21,7 +21,7 @@ namespace Ketarin
             Regex Remover = new Regex(@"^['""]?(.*?)['""]?$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-            string Parameter = null;
+            string? Parameter = null;
 
             // Valid parameters forms:
             // {-,/,--}param{ ,=,:}((",')value(",'))

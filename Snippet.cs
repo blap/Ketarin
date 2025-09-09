@@ -1,6 +1,8 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Data;
-using System.Data.SQLite;
+using Ketarin.Database;
 
 namespace Ketarin
 {
@@ -17,7 +19,7 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets the name of the snippet.
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the language/type of the snippet.
@@ -27,7 +29,7 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets the content of the snippet.
         /// </summary>
-        public string Text { get; set; }
+        public string Text { get; set; } = string.Empty;
 
         /// <summary>
         /// Saves the snippet to the database.
@@ -38,37 +40,38 @@ namespace Ketarin
             {
                 this.Guid = Guid.NewGuid();
 
-                // Overwrite existing names
-                using (IDbCommand command = DbManager.Connection.CreateCommand())
+                // Overwrite existing names - check if snippet already exists
+                JsonSnippet[] existingSnippets = JsonDbManager.GetSnippets();
+                foreach (JsonSnippet snippet in existingSnippets)
                 {
-                    command.CommandText = @"SELECT SnippetGuid FROM snippets WHERE Name = @Name AND Type = @Type";
-                    command.Parameters.Add(new SQLiteParameter("@Name", Name));
-                    command.Parameters.Add(new SQLiteParameter("@Type", Type.ToString()));
-                    string existingGuid = command.ExecuteScalar() as string;
-                    if (existingGuid != null)
+                    if (snippet.Name == Name && snippet.Type == Type.ToString())
                     {
-                        this.Guid = new Guid(existingGuid);
+                        if (!string.IsNullOrEmpty(snippet.SnippetGuid))
+                        {
+                            this.Guid = Guid.Parse(snippet.SnippetGuid);
+                        }
+                        break;
                     }
                 }
             }
 
-            using (IDbCommand command = DbManager.Connection.CreateCommand())
+            // Save snippet to JSON database
+            JsonSnippet jsonSnippet = new JsonSnippet
             {
-                command.CommandText = @"INSERT OR REPLACE INTO snippets (SnippetGuid, Name, Type, Text) VALUES (@SnippetGuid, @Name, @Type, @Text)";
-                command.Parameters.Add(new SQLiteParameter("@SnippetGuid", DbManager.FormatGuid(this.Guid)));
-                command.Parameters.Add(new SQLiteParameter("@Name", Name));
-                command.Parameters.Add(new SQLiteParameter("@Type", Type.ToString()));
-                command.Parameters.Add(new SQLiteParameter("@Text", Text));
-                command.ExecuteNonQuery();
-            }
+                SnippetGuid = this.Guid.ToString(),
+                Name = Name,
+                Type = Type.ToString(),
+                Text = Text
+            };
+            JsonDbManager.SaveSnippet(jsonSnippet);
         }
 
         internal void Hydrate(IDataReader reader)
         {
-            this.Name = reader["Name"] as string;
-            this.Type = Command.ConvertToScriptType(reader["Type"] as string);
-            this.Text = reader["Text"] as string;
-            this.Guid = new Guid(reader["SnippetGuid"] as string);
+            this.Name = reader["Name"] as string ?? string.Empty;
+            this.Type = Command.ConvertToScriptType(reader["Type"] as string ?? string.Empty);
+            this.Text = reader["Text"] as string ?? string.Empty;
+            this.Guid = new Guid(reader["SnippetGuid"] as string ?? string.Empty);
         }
 
         /// <summary>
@@ -76,12 +79,8 @@ namespace Ketarin
         /// </summary>
         internal void Delete()
         {
-            using (IDbCommand command = DbManager.Connection.CreateCommand())
-            {
-                command.CommandText = @"DELETE FROM snippets WHERE SnippetGuid = @SnippetGuid";
-                command.Parameters.Add(new SQLiteParameter("@SnippetGuid", DbManager.FormatGuid(this.Guid)));
-                command.ExecuteNonQuery();
-            }
+            // Delete snippet from JSON database
+            JsonDbManager.DeleteSnippet(this.Guid.ToString());
         }
     }
 }

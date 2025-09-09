@@ -1,0 +1,9 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos est├úo atualizados para restaura├º├úo.
+  Ketarin.Net9 -> C:\Users\Admin\Documents\GitHub\Ketarin\bin\x64\Debug\net9.0-windows\Ketarin.dll
+
+Compila├º├úo com ├¬xito.
+    0 Aviso(s)
+    0 Erro(s)
+
+Tempo Decorrido 00:00:00.95

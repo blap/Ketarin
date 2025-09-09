@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -7,17 +7,17 @@ namespace Ketarin.Forms
 {
     public partial class CloseProcessInstructionDialog : InstructionBaseDialog
     {
-        private CloseProcessInstruction instruction;
+        private CloseProcessInstruction? instruction;
 
-        public override SetupInstruction SetupInstruction
+        public override SetupInstruction? SetupInstruction
         {
             set
             {
-                CloseProcessInstruction instruction = value as CloseProcessInstruction;
+                CloseProcessInstruction? instruction = value as CloseProcessInstruction;
                 if (instruction != null)
                 {
                     this.instruction = instruction;
-                    cboProcessName.Text = instruction.ProcessName;
+                    cboProcessName.Text = instruction.ProcessName ?? string.Empty;
                 }
             }
             get

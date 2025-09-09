@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
@@ -11,7 +11,7 @@ namespace Ketarin.Forms
     internal class VariableTextBox : TextBox
     {
         private string[] m_VariableNames = new string[0];
-        private ContextMenuCustomiser m_Customiser;
+        private ContextMenuStrip? m_Customiser;
         private bool m_EnableEditor = true;
 
         #region Properties
@@ -67,7 +67,8 @@ namespace Ketarin.Forms
         {
             base.OnHandleCreated(e);
 
-            m_Customiser = new ContextMenuCustomiser(this);
+            m_Customiser = new ContextMenuStrip();
+            this.ContextMenuStrip = m_Customiser;
             RebuildContextMenu();
         }
 
@@ -78,7 +79,7 @@ namespace Ketarin.Forms
         {
             if (m_Customiser == null) return;
 
-            m_Customiser.MenuItems.Clear();
+            m_Customiser.Items.Clear();
 
             // No options for read only text boxes
             if (ReadOnly) return;
@@ -92,15 +93,13 @@ namespace Ketarin.Forms
                 vars.Reverse();
 
                 // Add final separator
-                m_Customiser.MenuItems.Add(new ContextMenuItem(string.Empty, 0));
+                m_Customiser.Items.Add(new ToolStripSeparator());
 
                 foreach (string var in vars)
                 {
-                    ContextMenuItem newItem = new ContextMenuItem("{" + var + "}", 0)
-                    {
-                        EventHandler = this.OnVariableSelected
-                    };
-                    m_Customiser.MenuItems.Add(newItem);
+                    ToolStripMenuItem newItem = new ToolStripMenuItem("{" + var + "}");
+                    newItem.Click += (sender, e) => OnVariableSelected(newItem.Text);
+                    m_Customiser.Items.Add(newItem);
                 }
             }
 
@@ -108,36 +107,34 @@ namespace Ketarin.Forms
             if (Multiline && m_EnableEditor)
             {
                 // Add final separator
-                m_Customiser.MenuItems.Add(new ContextMenuItem(string.Empty, 0));
+                m_Customiser.Items.Add(new ToolStripSeparator());
 
-                ContextMenuItem newItem = new ContextMenuItem("Editor...", 0)
+                ToolStripMenuItem newItem = new ToolStripMenuItem("Editor...");
+                newItem.Click += (sender, e) =>
                 {
-                    EventHandler = delegate
+                    using (MultilineEditorDialog dialog = new MultilineEditorDialog())
                     {
-                        using (MultilineEditorDialog dialog = new MultilineEditorDialog())
-                        {
-                            dialog.Value = this.Text;
-                            dialog.SetVariableNames(m_VariableNames);
+                        dialog.Value = this.Text;
+                        dialog.SetVariableNames(m_VariableNames);
 
-                            if (dialog.ShowDialog(this) == DialogResult.OK)
-                            {
-                                this.Text = dialog.Value;
-                            }
+                        if (dialog.ShowDialog(this) == DialogResult.OK)
+                        {
+                            this.Text = dialog.Value;
                         }
                     }
                 };
-                m_Customiser.MenuItems.Add(newItem);
+                m_Customiser.Items.Add(newItem);
             }
         }
 
         /// <summary>
         /// Inserts the selected variable at the current cursor position.
         /// </summary>
-        private void OnVariableSelected(ContextMenuItem menuItem)
+        private void OnVariableSelected(string menuItemText)
         {
             int selStart = SelectionStart;
-            Text = Text.Insert(selStart, menuItem.Text);
-            SelectionStart = selStart + menuItem.Text.Length;
+            Text = Text.Insert(selStart, menuItemText);
+            SelectionStart = selStart + menuItemText.Length;
         }
     }
 }

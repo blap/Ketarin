@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace Ketarin.Forms
 {
@@ -31,8 +31,9 @@ namespace Ketarin.Forms
         private void InitializeComponent()
         {
             this.txtLog = new Ketarin.Forms.TextBox();
-            this.contextMenu = new System.Windows.Forms.ContextMenu();
-            this.mnuClearLog = new System.Windows.Forms.MenuItem();
+            this.contextMenu = new System.Windows.Forms.ContextMenuStrip();
+            this.mnuClearLog = new System.Windows.Forms.ToolStripMenuItem();
+            this.contextMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // txtLog
@@ -52,13 +53,16 @@ namespace Ketarin.Forms
             // 
             // contextMenu
             // 
-            this.contextMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.contextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuClearLog});
+            this.contextMenu.Name = "contextMenu";
+            this.contextMenu.Size = new System.Drawing.Size(103, 26);
             // 
             // mnuClearLog
             // 
-            this.mnuClearLog.Index = 0;
-            this.mnuClearLog.Shortcut = System.Windows.Forms.Shortcut.CtrlQ;
+            this.mnuClearLog.Name = "mnuClearLog";
+            this.mnuClearLog.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Q)));
+            this.mnuClearLog.Size = new System.Drawing.Size(102, 22);
             this.mnuClearLog.Text = "&Clear log";
             this.mnuClearLog.Click += new System.EventHandler(this.mnuClearLog_Click);
             // 
@@ -74,6 +78,7 @@ namespace Ketarin.Forms
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.Text = "Log";
+            this.contextMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -82,7 +87,7 @@ namespace Ketarin.Forms
         #endregion
 
         private TextBox txtLog;
-        private System.Windows.Forms.ContextMenu contextMenu;
-        private System.Windows.Forms.MenuItem mnuClearLog;
+        private System.Windows.Forms.ContextMenuStrip contextMenu;
+        private System.Windows.Forms.ToolStripMenuItem mnuClearLog;
     }
 }

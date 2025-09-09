@@ -1,7 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SQLite;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -17,6 +15,8 @@ using System.Reflection;
 using System.Collections;
 using System.Linq;
 using CodeProject.ReiMiyasaka;
+using System.Data;
+using Ketarin.Database;
 
 namespace Ketarin
 {
@@ -28,18 +28,19 @@ namespace Ketarin
     [XmlRoot("ApplicationJob")]
     public class ApplicationJob
     {
-        private string m_Name;
+        private string m_Name = string.Empty;
         private string m_TargetPath = string.Empty;
         private DateTime? m_LastUpdated;
-        private UrlVariableCollection m_Variables;
+        private UrlVariableCollection m_Variables = new UrlVariableCollection();
         private bool m_ShareApplication;
         private string m_VariableChangeIndicator = string.Empty;
-        private string m_VariableChangeIndicatorLastContent;
+        private string m_VariableChangeIndicatorLastContent = string.Empty;
         private string m_PreviousRelativeLocation = string.Empty;
-        private List<SetupInstruction> setupInstructions;
-        private static PropertyInfo[] applicationJobProperties;
-        private string cachedCurrentLocation;
+        private List<SetupInstruction> setupInstructions = new List<SetupInstruction>();
+        private static PropertyInfo[]? applicationJobProperties;
+        private string cachedCurrentLocation = string.Empty;
         private string previousLocation = string.Empty;
+        private DateTime? m_DateAdded;
 
         /// <summary>
         /// Cached list of public properties of the type ApplicationJob.
@@ -53,32 +54,35 @@ namespace Ketarin
             }
         }
 
-        public enum SourceType
-        {
-            FixedUrl,
-            FileHippo
-        }
-
-        public enum DownloadBetaType
-        {
-            Default = 0,
-            Avoid,
-            AlwaysDownload
-        }
-
         #region Properties
+
+        /// <summary>
+        /// Gets or sets the date the application was added.
+        /// </summary>
+        [XmlElement("DateAdded")]
+        public DateTime? DateAdded
+        {
+            get { return this.m_DateAdded; }
+            set
+            {
+                if (this.m_DateAdded != value)
+                {
+                    this.m_DateAdded = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the template from which the application has been created.
         /// </summary>
         [XmlIgnore()]
-        public string SourceTemplate { get; set; }
+        public string SourceTemplate { get; set; } = string.Empty;
 
         /// <summary>
         /// Source template property for XML serialization as CDATA.
         /// </summary>
         [XmlElement("SourceTemplate", typeof(XmlCDataSection))]
-        public XmlCDataSection SourceTemplateCdata
+        public XmlCDataSection? SourceTemplateCdata
         {
             get
             {
@@ -109,12 +113,13 @@ namespace Ketarin
                     // Make sure that no nested source templates are saved
                     foreach (XmlElement e in doc.GetElementsByTagName("SourceTemplate"))
                     {
-                        e.ParentNode.RemoveChild(e);
+                        e.ParentNode?.RemoveChild(e);
                         break;
                     }
-                    if (doc.FirstChild is XmlDeclaration)
+                    XmlNode? firstChild = doc.FirstChild;
+                    if (firstChild != null && firstChild is XmlDeclaration)
                     {
-                        doc.RemoveChild(doc.FirstChild);
+                        doc.RemoveChild(firstChild);
                     }
                     this.SourceTemplate = doc.OuterXml.Trim();
                 }
@@ -124,7 +129,7 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets the website of the application.
         /// </summary>
-        public string WebsiteUrl { get; set; }
+        public string WebsiteUrl { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets the website of an application with all variables replaced.
@@ -134,12 +139,12 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets a custom user agent to use for downloads.
         /// </summary>
-        public string UserAgent { get; set; }
+        public string UserAgent { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the custom notes for an application.
         /// </summary>
-        public string UserNotes { get; set; }
+        public string UserNotes { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the last size of the file which
@@ -173,7 +178,7 @@ namespace Ketarin
         /// scraped from a PAD file.
         /// </summary>
         [XmlIgnore()]
-        internal string CachedPadFileVersion { get; set; }
+        internal string CachedPadFileVersion { get; set; } = string.Empty;
 
         /// <summary>
         /// The last updated date of the application
@@ -201,7 +206,7 @@ namespace Ketarin
                 if (this.m_VariableChangeIndicator != value)
                 {
                     this.m_VariableChangeIndicator = value;
-                    this.m_VariableChangeIndicatorLastContent = null;
+                    this.m_VariableChangeIndicatorLastContent = string.Empty;
                 }
             }
         }
@@ -209,7 +214,7 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets the variable which contains the hash value.
         /// </summary>
-        public string HashVariable { get; set; }
+        public string HashVariable { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the kind of hash used for change detection.
@@ -267,28 +272,31 @@ namespace Ketarin
                 {
                     this.setupInstructions = new List<SetupInstruction>();
 
-                    using (IDbCommand command = DbManager.Connection.CreateCommand())
+                    // Load setup instructions from JsonDbManager instead of SQLite
+                    var jsonInstructions = Database.JsonDbManager.GetSetupInstructions(this.Guid.ToString());
+                    if (jsonInstructions != null)
                     {
-                        command.CommandText = "SELECT * FROM setupinstructions WHERE JobGuid = @JobGuid ORDER BY Position";
-                        command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-
-                        using (IDataReader reader = command.ExecuteReader())
+                        foreach (var jsonInstruction in jsonInstructions)
                         {
-                            while (reader.Read())
+                            string xmlInstructions = jsonInstruction?.Data ?? string.Empty;
+                            if (string.IsNullOrEmpty(xmlInstructions)) continue;
+
+                            // Needed to determine appropriate type
+                            XmlDocument? doc = new XmlDocument();
+                            doc?.LoadXml(xmlInstructions);
+
+                            using (StringReader xmlReader = new StringReader(xmlInstructions))
                             {
-                                string xmlInstructions = reader["Data"] as string;
-                                if (string.IsNullOrEmpty(xmlInstructions)) continue;
-
-                                // Needed to determine appropriate type
-                                XmlDocument doc = new XmlDocument();
-                                doc.LoadXml(xmlInstructions);
-
-                                using (StringReader xmlReader = new StringReader(xmlInstructions))
+                                Type? type = Type.GetType("Ketarin." + doc?.DocumentElement?.Name);
+                                if (type != null)
                                 {
-                                    XmlSerializer serializer = new XmlSerializer(Type.GetType("Ketarin." + doc.DocumentElement.Name));
-                                    SetupInstruction instruction = (SetupInstruction)serializer.Deserialize(xmlReader);
-                                    instruction.Application = this;
-                                    this.setupInstructions.Add(instruction);
+                                    XmlSerializer serializer = new XmlSerializer(type);
+                                    SetupInstruction? instruction = serializer.Deserialize(xmlReader) as SetupInstruction;
+                                    if (instruction != null)
+                                    {
+                                        instruction.Application = this;
+                                        this.setupInstructions.Add(instruction);
+                                    }
                                 }
                             }
                         }
@@ -308,7 +316,7 @@ namespace Ketarin
         public class UrlVariableCollection : SerializableDictionary<string, UrlVariable>
         {
             private bool m_VersionDownloaded;
-            private FileInfo cachedInfo;
+            private FileInfo? cachedInfo;
 
             #region Properties
 
@@ -316,17 +324,19 @@ namespace Ketarin
             /// Gets or sets the application to which the collection belongs.
             /// </summary>
             [XmlIgnore()]
-            public ApplicationJob Parent { get; set; }
+            public ApplicationJob? Parent { get; set; }
 
             #endregion
 
             public UrlVariableCollection()
             {
+                this.cachedInfo = null;
             }
             
             public UrlVariableCollection(ApplicationJob parent)
             {
                 this.Parent = parent;
+                this.cachedInfo = null;
             }
 
             /// <summary>
@@ -361,9 +371,9 @@ namespace Ketarin
                 return this.ReplaceAllInString(value, DateTime.MinValue, null, false);
             }
 
-            public virtual string ReplaceAllInString(string value, DateTime fileDate, string filename, bool onlyCachedContent, bool skipGlobalVariables = false)
+            public virtual string ReplaceAllInString(string value, DateTime fileDate, string? filename, bool onlyCachedContent, bool skipGlobalVariables = false)
             {
-                if (value == null) return null;
+                if (value == null) return string.Empty;
 
                 if (this.Parent != null && !string.IsNullOrEmpty(this.Parent.CurrentLocation))
                 {
@@ -379,12 +389,12 @@ namespace Ketarin
                             this.cachedInfo = new FileInfo(this.Parent.CurrentLocation);
                         }
                         // Try to provide file date if missing
-                        if (fileDate == DateTime.MinValue)
+                        if (fileDate == DateTime.MinValue && this.cachedInfo != null)
                         {
                             fileDate = this.cachedInfo.LastWriteTime;
                         }
                         // Provide file size
-                        if (this.cachedInfo.Exists)
+                        if (this.cachedInfo != null && this.cachedInfo.Exists)
                         {
                             value = UrlVariable.Replace(value, "filesize", this.cachedInfo.Length.ToString(), this.Parent);
                         }
@@ -457,7 +467,7 @@ namespace Ketarin
                     }
 
                     value = UrlVariable.Replace(value, "appname", this.Parent.Name, this.Parent);
-                    value = UrlVariable.Replace(value, "appguid", DbManager.FormatGuid(this.Parent.Guid), this.Parent);
+                    value = UrlVariable.Replace(value, "appguid", Database.JsonDbManager.FormatGuid(this.Parent.Guid), this.Parent);
                     
                    
                     // Allow to access all public properties of the object per "property:X" variable.
@@ -531,49 +541,29 @@ namespace Ketarin
         /// {file} is a placeholder for PreviousLocation.
         /// </summary>
         [XmlElement("ExecuteCommand")]
-        public string ExecuteCommand
-        {
-            get;
-            set;
-        }
+        public string ExecuteCommand { get; set; } = string.Empty;
 
         /// <summary>
         /// A command to be executed before downloading.
         /// {file} is a placeholder for PreviousLocation.
         /// </summary>
         [XmlElement("ExecutePreCommand")]
-        public string ExecutePreCommand
-        {
-            get;
-            set;
-        }
+        public string ExecutePreCommand { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the type of the post download command.
         /// </summary>
         [XmlElement("ExecuteCommandType")]
-        public ScriptType ExecuteCommandType
-        {
-            get;
-            set;
-        }
+        public ScriptType ExecuteCommandType { get; set; } = ScriptType.Batch;
 
         /// <summary>
         /// Gets or sets the type of the pre download command.
         /// </summary>
         [XmlElement("ExecutePreCommandType")]
-        public ScriptType ExecutePreCommandType
-        {
-            get;
-            set;
-        }
+        public ScriptType ExecutePreCommandType { get; set; } = ScriptType.Batch;
 
         [XmlElement("Category")]
-        public string Category
-        {
-            get;
-            set;
-        }
+        public string Category { get; set; } = string.Empty;
 
         [XmlElement("SourceType")]
         public SourceType DownloadSourceType { get; set; } = SourceType.FixedUrl;
@@ -647,7 +637,7 @@ namespace Ketarin
         public bool DeletePreviousFile
         {
             get; set;
-        }
+        } = false;
 
         [XmlElement("Enabled")]
         public bool Enabled { get; set; }
@@ -745,26 +735,7 @@ namespace Ketarin
         /// </summary>
         public void Delete()
         {
-            SQLiteTransaction transaction = DbManager.Connection.BeginTransaction();
-
-            using (IDbCommand command = DbManager.Connection.CreateCommand())
-            {
-                command.Transaction = transaction;
-                command.CommandText = @"DELETE FROM jobs WHERE JobGuid = @JobGuid";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-                command.ExecuteNonQuery();
-            }
-
-            // Delete variables
-            using (IDbCommand command = DbManager.Connection.CreateCommand())
-            {
-                command.Transaction = transaction;
-                command.CommandText = "DELETE FROM variables WHERE JobGuid = @JobGuid";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-                command.ExecuteNonQuery();
-            }
-
-            transaction.Commit();
+            DbManager.DeleteJob(this.Guid);
         }
 
         /// <summary>
@@ -772,24 +743,7 @@ namespace Ketarin
         /// </summary>
         public static void DeleteAll()
         {
-            SQLiteTransaction transaction = DbManager.Connection.BeginTransaction();
-
-            using (IDbCommand command = DbManager.Connection.CreateCommand())
-            {
-                command.Transaction = transaction;
-                command.CommandText = @"DELETE FROM jobs";
-                command.ExecuteNonQuery();
-            }
-
-            // Delete variables
-            using (IDbCommand command = DbManager.Connection.CreateCommand())
-            {
-                command.Transaction = transaction;
-                command.CommandText = "DELETE FROM variables";
-                command.ExecuteNonQuery();
-            }
-
-            transaction.Commit();
+            DbManager.DeleteAllJobs();
         }
 
         /// <summary>
@@ -901,7 +855,7 @@ namespace Ketarin
         /// Imports one (incomplete) ApplicationJob from a PAD file.
         /// </summary>
         /// <returns>null, if no application could be extracted</returns>
-        private static ApplicationJob ImportFromPadXml(string xml)
+        private static ApplicationJob? ImportFromPadXml(string xml)
         {
             XmlDocument doc = new XmlDocument();
 
@@ -987,8 +941,11 @@ namespace Ketarin
             XmlNodeList downloadUrlElements = doc.GetElementsByTagName("FixedDownloadUrl");
             if (downloadUrlElements.Count > 0)
             {
-                XmlElement downloadUrlElement = downloadUrlElements[0] as XmlElement;
-                downloadUrlElement.InnerText = UrlVariable.GlobalVariables.ReplaceAllInString(downloadUrlElement.InnerText);
+                XmlElement? downloadUrlElement = downloadUrlElements[0] as XmlElement;
+                if (downloadUrlElement != null)
+                {
+                    downloadUrlElement.InnerText = UrlVariable.GlobalVariables.ReplaceAllInString(downloadUrlElement.InnerText) ?? string.Empty;
+                }
             }
             // Adjust variables
             XmlNodeList urlVariableElements = doc.GetElementsByTagName("UrlVariable");
@@ -1112,13 +1069,22 @@ namespace Ketarin
                     // Remove attribute Guid
                     element.RemoveAttribute("Guid");
                     // Remove element DownloadDate
-                    element.RemoveChild(element["DownloadDate"]);
-                    // Remove element LastUpdated
-                    element.RemoveChild(element["LastUpdated"]);
-                    // Remove element PreviousLocation
-                    if (element["PreviousLocation"] != null)
+                    XmlNode? downloadDateNode = element["DownloadDate"];
+                    if (downloadDateNode != null)
                     {
-                        element.RemoveChild(element["PreviousLocation"]);
+                        element.RemoveChild(downloadDateNode);
+                    }
+                    // Remove element LastUpdated
+                    XmlNode? lastUpdatedNode = element["LastUpdated"];
+                    if (lastUpdatedNode != null)
+                    {
+                        element.RemoveChild(lastUpdatedNode);
+                    }
+                    // Remove element PreviousLocation
+                    XmlNode? previousLocationNode = element["PreviousLocation"];
+                    if (previousLocationNode != null)
+                    {
+                        element.RemoveChild(previousLocationNode);
                     }
                 }
 
@@ -1151,8 +1117,42 @@ namespace Ketarin
         /// <returns>The last imported ApplicationJob</returns>
         public static ApplicationJob LoadOneFromXml(string xml)
         {
-            ApplicationJob[] jobs = LoadFromXml(xml);
-            return (jobs.Length == 0) ? null : jobs[0];
+            XmlDocument doc = new XmlDocument();
+            try
+            {
+                doc.LoadXml(xml);
+            }
+            catch (XmlException)
+            {
+                return null;
+            }
+
+            XmlNodeList progNames = doc.GetElementsByTagName("Program_Name");
+            XmlNodeList downloadUrls = doc.GetElementsByTagName("Primary_Download_URL");
+            XmlNodeList versionInfos = doc.GetElementsByTagName("Program_Version");
+            XmlNodeList versionInfos2 = doc.GetElementsByTagName("Filename_Versioned");
+
+            if (progNames.Count == 0 && downloadUrls.Count == 0) return null;
+
+            ApplicationJob job = new ApplicationJob {DownloadSourceType = SourceType.FixedUrl};
+            if (progNames.Count > 0)
+            {
+                job.Name = doc.GetElementsByTagName("Program_Name")[0].InnerText;
+            }
+            if (downloadUrls.Count > 0)
+            {
+                job.FixedDownloadUrl = doc.GetElementsByTagName("Primary_Download_URL")[0].InnerText;
+            }
+            if (versionInfos.Count > 0)
+            {
+                job.CachedPadFileVersion = doc.GetElementsByTagName("Program_Version")[0].InnerText;
+            }
+            else if (versionInfos2.Count > 0)
+            {
+                job.CachedPadFileVersion = doc.GetElementsByTagName("Filename_Versioned")[0].InnerText;
+            }
+
+            return job;
         }
 
         /// <summary>
@@ -1306,30 +1306,20 @@ namespace Ketarin
         /// </summary>
         private static bool AreTemplatesEqual(XmlDocument template1, XmlDocument template2)
         {
-            XmlDocument templateA = template1.Clone() as XmlDocument;
-            XmlDocument templateB = template2.Clone() as XmlDocument;
-
-            XmlNodeList nodes = templateA.GetElementsByTagName("placeholder");
-            XmlNode[] placeholders = new XmlNode[nodes.Count];
-            for (int i = 0; i < placeholders.Length; i++)
+            XmlDocument? templateA = template1.Clone() as XmlDocument;
+            XmlDocument? templateB = template2.Clone() as XmlDocument;
+            
+            if (templateA == null || templateB == null)
+                return false;
+                
+            // Remove all variables from the templates to compare them properly
+            foreach (XmlNode variableNode in templateA.SelectNodes("//placeholder"))
             {
-                placeholders[i] = nodes[i];
+                variableNode.InnerText = string.Empty;
             }
-
-            foreach (XmlElement element in placeholders)
+            foreach (XmlNode variableNode in templateB.SelectNodes("//placeholder"))
             {
-                element.ParentNode.RemoveChild(element);
-            }
-
-            nodes = templateB.GetElementsByTagName("placeholder");
-            placeholders = new XmlNode[nodes.Count];
-            for (int i = 0; i < placeholders.Length; i++)
-            {
-                placeholders[i] = nodes[i];
-            }
-            foreach (XmlElement element in placeholders)
-            {
-                element.ParentNode.RemoveChild(element);
+                variableNode.InnerText = string.Empty;
             }
 
             return templateA.OuterXml == templateB.OuterXml;
@@ -1414,260 +1404,132 @@ namespace Ketarin
             return importedJobs.ToArray();
         }
 
+        public void Hydrate(IDataReader reader)
+        {
+            this.m_Name = reader["ApplicationName"] as string ?? string.Empty;
+            this.FixedDownloadUrl = reader["FixedDownloadUrl"] as string ?? string.Empty;
+            this.TargetPath = reader["TargetPath"] as string ?? string.Empty;
+            this.m_LastUpdated = reader["LastUpdated"] as DateTime?;
+            this.Enabled = Convert.ToBoolean(reader["IsEnabled"] ?? false);
+            this.FileHippoId = reader["FileHippoId"] as string ?? string.Empty;
+            this.DeletePreviousFile = Convert.ToBoolean(reader["DeletePreviousFile"] ?? false);
+            this.PreviousLocation = reader["PreviousLocation"] as string ?? string.Empty;
+            this.DownloadSourceType = (SourceType)Convert.ToByte(reader["SourceType"] ?? (byte)0);
+            this.ExecuteCommand = reader["ExecuteCommand"] as string ?? string.Empty;
+            this.ExecutePreCommand = reader["ExecutePreCommand"] as string ?? string.Empty;
+            this.Category = reader["Category"] as string ?? string.Empty;
+            this.CanBeShared = Convert.ToBoolean(reader["CanBeShared"] ?? false);
+            this.m_ShareApplication = Convert.ToBoolean(reader["ShareApplication"] ?? false);
+            this.FileHippoVersion = reader["FileHippoVersion"] as string ?? string.Empty;
+            this.HttpReferer = reader["HttpReferer"] as string ?? string.Empty;
+            this.m_VariableChangeIndicator = reader["VariableChangeIndicator"] as string ?? string.Empty;
+            this.HashVariable = reader["HashVariable"] as string ?? string.Empty;
+            this.HashType = (HashType)Convert.ToByte(reader["HashType"] ?? (byte)0);
+            this.m_VariableChangeIndicatorLastContent = reader["VariableChangeIndicatorLastContent"] as string ?? string.Empty;
+            this.ExclusiveDownload = Convert.ToBoolean(reader["ExclusiveDownload"] ?? false);
+            this.CheckForUpdatesOnly = Convert.ToBoolean(reader["CheckForUpdateOnly"] ?? false);
+            this.CachedPadFileVersion = reader["CachedPadFileVersion"] as string ?? string.Empty;
+            this.LastFileSize = Convert.ToInt64(reader["LastFileSize"] ?? 0L);
+            this.NumberOfRevisions = Convert.ToInt32(reader["NumberOfRevisions"] ?? 0);
+            this.LastFileDate = reader["LastUpdated"] as DateTime?;
+            this.IgnoreFileInformation = Convert.ToBoolean(reader["IgnoreFileInformation"] ?? false);
+            this.UserNotes = reader["UserNotes"] as string ?? string.Empty;
+            this.WebsiteUrl = reader["WebsiteUrl"] as string ?? string.Empty;
+            this.UserAgent = reader["UserAgent"] as string ?? string.Empty;
+            this.SourceTemplate = reader["SourceTemplate"] as string ?? string.Empty;
+            this.m_PreviousRelativeLocation = reader["PreviousRelativeLocation"] as string ?? string.Empty;
+
+            string executeCommandType = reader["ExecuteCommandType"] as string;
+            if (executeCommandType != null)
+            {
+                this.ExecuteCommandType = Command.ConvertToScriptType(executeCommandType ?? string.Empty);
+            }
+
+            string executePreCommandType = reader["ExecutePreCommandType"] as string;
+            if (executePreCommandType != null)
+            {
+                this.ExecutePreCommandType = Command.ConvertToScriptType(executePreCommandType ?? string.Empty);
+            }
+
+            if (reader["DownloadBeta"] != DBNull.Value && reader["DownloadBeta"] != null)
+            {
+                this.DownloadBeta = (DownloadBetaType)Convert.ToInt32(reader["DownloadBeta"] ?? 0);
+            }
+            // An application has not been downloaded necessarily
+            this.DownloadDate = (reader["DownloadDate"] != DBNull.Value) ? reader["DownloadDate"] as DateTime? : null;
+            
+            string guid = reader["JobGuid"] as string;
+            this.Guid = string.IsNullOrEmpty(guid) ? Guid.Empty : new Guid(guid);
+        }
+
         /// <summary>
         /// Saves the application job including all variables
         /// to the database.
         /// </summary>
         public void Save()
         {
-            lock (this)
+            // Convert ApplicationJob to JsonApplicationJob
+            JsonApplicationJob jsonJob = new JsonApplicationJob
             {
-                using (SQLiteConnection conn = DbManager.NewConnection)
+                JobGuid = this.Guid.ToString(),
+                ApplicationName = this.Name,
+                TargetPath = this.TargetPath,
+                FixedDownloadUrl = this.FixedDownloadUrl,
+                FileHippoId = this.FileHippoId,
+                FileHippoVersion = this.FileHippoVersion,
+                DateAdded = this.DateAdded,
+                LastUpdated = this.m_LastUpdated,
+                DownloadDate = this.DownloadDate,
+                PreviousLocation = this.PreviousLocation,
+                ExecuteCommand = this.ExecuteCommand,
+                HttpReferer = this.HttpReferer,
+                VariableChangeIndicator = this.m_VariableChangeIndicator,
+                VariableChangeIndicatorLastContent = this.m_VariableChangeIndicatorLastContent,
+                DeletePreviousFile = this.DeletePreviousFile ? 1 : 0,
+                DownloadBeta = (int)this.DownloadBeta,
+                CanBeShared = this.CanBeShared ? 1 : 0,
+                ShareApplication = this.m_ShareApplication ? 1 : 0,
+                SourceType = (int)this.DownloadSourceType,
+                IsEnabled = this.Enabled ? 1 : 0,
+                ExecuteCommandType = this.ExecuteCommandType.ToString(),
+                ExecutePreCommand = this.ExecutePreCommand,
+                ExecutePreCommandType = this.ExecutePreCommandType.ToString(),
+                SourceTemplate = this.SourceTemplate,
+                Category = this.Category,
+                ExclusiveDownload = this.ExclusiveDownload ? 1 : 0,
+                CheckForUpdateOnly = this.CheckForUpdatesOnly ? 1 : 0,
+                UserNotes = this.UserNotes,
+                WebsiteUrl = this.WebsiteUrl,
+                UserAgent = this.UserAgent,
+                PreviousRelativeLocation = this.m_PreviousRelativeLocation,
+                HashType = (int)this.HashType,
+                HashVariable = this.HashVariable,
+                NumberOfRevisions = this.NumberOfRevisions,
+                LastFileSize = this.LastFileSize,
+                LastFileDate = this.LastFileDate,
+                IgnoreFileInformation = this.IgnoreFileInformation ? 1 : 0
+            };
+
+            // Save the job to JSON database
+            JsonDbManager.SaveJob(jsonJob);
+
+            // Save variables
+            foreach (KeyValuePair<string, UrlVariable> pair in this.Variables)
+            {
+                pair.Value.Save(null, this.Guid); // Pass null for transaction since we're using JSON
+            }
+
+            // Save setup instructions
+            if (this.setupInstructions != null)
+            {
+                JsonDbManager.DeleteSetupInstructions(this.Guid.ToString()); // Clear existing instructions
+                int pos = 0;
+                foreach (SetupInstruction instruction in this.setupInstructions)
                 {
-                    using (SQLiteTransaction transaction = conn.BeginTransaction())
-                    {
-                        if (!DbManager.ApplicationExists(conn, this.Guid))
-                        {
-                            if (this.Guid == Guid.Empty) this.Guid = Guid.NewGuid();
-
-                            // Insert stub, update afterwards.
-                            using (IDbCommand command = conn.CreateCommand())
-                            {
-                                command.Transaction = transaction;
-                                command.CommandText = @"INSERT INTO jobs (JobGuid, CanBeShared) VALUES (@JobGuid, @CanBeShared)";
-                                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-                                command.Parameters.Add(new SQLiteParameter("@CanBeShared", this.CanBeShared));
-                                command.ExecuteNonQuery();
-                            }
-                        }
-
-                        // Important: Once CanBeShared is set to false,
-                        // it can never be true again (ownership does not change)
-                        using (IDbCommand command = conn.CreateCommand())
-                        {
-                            command.Transaction = transaction;
-                            command.CommandText = "SELECT CanBeShared FROM jobs WHERE JobGuid = @JobGuid";
-                            command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-                            bool canBeShared = Convert.ToBoolean(command.ExecuteScalar());
-                            if (!canBeShared)
-                            {
-                                this.CanBeShared = false;
-                            }
-                        }
-
-                        // Update existing job
-                        using (IDbCommand command = conn.CreateCommand())
-                        {
-                            command.Transaction = transaction;
-                            command.CommandText = @"UPDATE jobs
-                                               SET ApplicationName = @ApplicationName,
-                                                   FixedDownloadUrl = @FixedDownloadUrl,
-                                                   TargetPath = @TargetPath,
-                                                   LastUpdated = @LastUpdated,
-                                                   IsEnabled = @IsEnabled,
-                                                   FileHippoId = @FileHippoId,
-                                                   DeletePreviousFile = @DeletePreviousFile,
-                                                   PreviousLocation = @PreviousLocation,
-                                                   SourceType = @SourceType,
-                                                   ExecuteCommand = @ExecuteCommand,
-                                                   ExecutePreCommand = @ExecutePreCommand, 
-                                                   Category = @Category,
-                                                   CanBeShared = @CanBeShared,
-                                                   ShareApplication = @ShareApplication,
-                                                   HttpReferer = @HttpReferer,
-                                                   FileHippoVersion = @FileHippoVersion,
-                                                   DownloadBeta = @DownloadBeta,
-                                                   DownloadDate = @DownloadDate,
-                                                   VariableChangeIndicator = @VariableChangeIndicator,
-                                                   VariableChangeIndicatorLastContent = @VariableChangeIndicatorLastContent,
-                                                   ExclusiveDownload = @ExclusiveDownload,
-                                                   CheckForUpdateOnly = @CheckForUpdateOnly,
-                                                   CachedPadFileVersion = @CachedPadFileVersion,
-                                                   LastFileDate = @LastFileDate,
-                                                   LastFileSize = @LastFileSize,
-                                                   IgnoreFileInformation = @IgnoreFileInformation,
-                                                   UserNotes = @UserNotes,
-                                                   WebsiteUrl = @WebsiteUrl,
-                                                   UserAgent = @UserAgent,
-                                                   ExecuteCommandType = @ExecuteCommandType,
-                                                   ExecutePreCommandType = @ExecutePreCommandType,
-                                                   SourceTemplate = @SourceTemplate,
-                                                   PreviousRelativeLocation = @PreviousRelativeLocation,
-                                                   HashVariable = @HashVariable,
-                                                   HashType = @HashType,
-                                                   NumberOfRevisions = @NumberOfRevisions
-                                             WHERE JobGuid = @JobGuid";
-
-                            command.Parameters.Add(new SQLiteParameter("@ApplicationName", this.Name));
-                            command.Parameters.Add(new SQLiteParameter("@FixedDownloadUrl", this.FixedDownloadUrl));
-                            command.Parameters.Add(new SQLiteParameter("@TargetPath", this.TargetPath));
-                            command.Parameters.Add(new SQLiteParameter("@LastUpdated", this.m_LastUpdated));
-                            command.Parameters.Add(new SQLiteParameter("@IsEnabled", this.Enabled));
-                            command.Parameters.Add(new SQLiteParameter("@FileHippoId", this.FileHippoId));
-                            command.Parameters.Add(new SQLiteParameter("@DeletePreviousFile", this.DeletePreviousFile));
-                            command.Parameters.Add(new SQLiteParameter("@PreviousLocation", this.PreviousLocation));
-                            command.Parameters.Add(new SQLiteParameter("@SourceType", this.DownloadSourceType));
-                            command.Parameters.Add(new SQLiteParameter("@ExecuteCommand", this.ExecuteCommand));
-                            command.Parameters.Add(new SQLiteParameter("@ExecutePreCommand", this.ExecutePreCommand));
-                            command.Parameters.Add(new SQLiteParameter("@Category", this.Category));
-                            command.Parameters.Add(new SQLiteParameter("@CanBeShared", this.CanBeShared));
-                            command.Parameters.Add(new SQLiteParameter("@ShareApplication", this.m_ShareApplication));
-                            command.Parameters.Add(new SQLiteParameter("@HttpReferer", this.HttpReferer));
-                            command.Parameters.Add(new SQLiteParameter("@FileHippoVersion", this.FileHippoVersion));
-                            command.Parameters.Add(new SQLiteParameter("@DownloadBeta", (int) this.DownloadBeta));
-                            command.Parameters.Add(new SQLiteParameter("@VariableChangeIndicator", this.m_VariableChangeIndicator));
-                            command.Parameters.Add(new SQLiteParameter("@VariableChangeIndicatorLastContent", this.m_VariableChangeIndicatorLastContent));
-                            command.Parameters.Add(new SQLiteParameter("@ExclusiveDownload", this.ExclusiveDownload));
-                            command.Parameters.Add(new SQLiteParameter("@CheckForUpdateOnly", this.CheckForUpdatesOnly));
-                            command.Parameters.Add(new SQLiteParameter("@CachedPadFileVersion", this.CachedPadFileVersion));
-                            command.Parameters.Add(new SQLiteParameter("@LastFileDate", this.LastFileDate));
-                            command.Parameters.Add(new SQLiteParameter("@LastFileSize", this.LastFileSize));
-                            command.Parameters.Add(new SQLiteParameter("@IgnoreFileInformation", this.IgnoreFileInformation));
-                            command.Parameters.Add(new SQLiteParameter("@UserNotes", this.UserNotes));
-                            command.Parameters.Add(new SQLiteParameter("@WebsiteUrl", this.WebsiteUrl));
-                            command.Parameters.Add(new SQLiteParameter("@UserAgent", this.UserAgent));
-                            command.Parameters.Add(new SQLiteParameter("@ExecuteCommandType", this.ExecuteCommandType));
-                            command.Parameters.Add(new SQLiteParameter("@ExecutePreCommandType", this.ExecutePreCommandType));
-                            command.Parameters.Add(new SQLiteParameter("@SourceTemplate", this.SourceTemplate));
-                            command.Parameters.Add(new SQLiteParameter("@HashVariable", this.HashVariable));
-                            command.Parameters.Add(new SQLiteParameter("@HashType", (int)this.HashType));
-                            command.Parameters.Add(new SQLiteParameter("@NumberOfRevisions", NumberOfRevisions)); 
-
-                            // In order to find files if the drive letter has changed (portable USB stick), also remember the 
-                            // last relative location.
-                            if (!string.IsNullOrEmpty(this.PreviousLocation))
-                            {
-                                try
-                                {
-                                    Uri uri1 = new Uri(this.PreviousLocation);
-                                    Uri uri2 = new Uri(Application.StartupPath + Path.DirectorySeparatorChar);
-
-                                    Uri relativeUri = uri2.MakeRelativeUri(uri1);
-                                    string relativePath = PathEx.FixDirectorySeparator(relativeUri.ToString());
-                                    // If result returns out to be not relative, no need to save
-                                    if (!Path.IsPathRooted(relativePath))
-                                    {
-                                        this.m_PreviousRelativeLocation = relativePath;
-                                    }
-                                }
-                                catch (Exception)
-                                {
-                                    // Not critical if path cannot be determined.
-                                }
-                            }
-
-                            command.Parameters.Add(new SQLiteParameter("@PreviousRelativeLocation", this.m_PreviousRelativeLocation));
-
-                            if (this.DownloadDate.HasValue)
-                            {
-                                command.Parameters.Add(new SQLiteParameter("@DownloadDate", this.DownloadDate.Value));
-                            }
-                            else
-                            {
-                                command.Parameters.Add(new SQLiteParameter("@DownloadDate", DBNull.Value));
-                            }
-
-                            command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-
-                            command.ExecuteNonQuery();
-                        }
-
-                        Dictionary<string, UrlVariable> variables = this.Variables;
-
-                        // Save variables
-                        using (IDbCommand command = conn.CreateCommand())
-                        {
-                            command.Transaction = transaction;
-                            command.CommandText = "DELETE FROM variables WHERE JobGuid = @JobGuid";
-                            command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-                            command.ExecuteNonQuery();
-                        }
-
-                        foreach (KeyValuePair<string, UrlVariable> pair in variables)
-                        {
-                            pair.Value.Save(transaction, this.Guid);
-                        }
-
-                        if (this.setupInstructions != null)
-                        {
-                            using (IDbCommand command = conn.CreateCommand())
-                            {
-                                command.Transaction = transaction;
-                                command.CommandText = "DELETE FROM setupinstructions WHERE JobGuid = @JobGuid";
-                                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Guid)));
-                                command.ExecuteNonQuery();
-                            }
-
-                            int pos = 0;
-                            foreach (SetupInstruction instruction in this.setupInstructions)
-                            {
-                                instruction.Application = this;
-                                instruction.Save(transaction, pos++);
-                            }
-                        }
-
-                        transaction.Commit();
-                    }
+                    instruction.Application = this;
+                    instruction.Save(null, pos++); // Pass null for transaction since we're using JSON
                 }
             }
-        }
-
-        public void Hydrate(IDataReader reader)
-        {
-            this.m_Name = reader["ApplicationName"] as string;
-            this.FixedDownloadUrl = reader["FixedDownloadUrl"] as string;
-            this.TargetPath = reader["TargetPath"] as string;
-            this.m_LastUpdated = reader["LastUpdated"] as DateTime?;
-            this.Enabled = Convert.ToBoolean(reader["IsEnabled"]);
-            this.FileHippoId = reader["FileHippoId"] as string;
-            this.DeletePreviousFile = Convert.ToBoolean(reader["DeletePreviousFile"]);
-            this.PreviousLocation = reader["PreviousLocation"] as string;
-            this.DownloadSourceType = (SourceType)Convert.ToByte(reader["SourceType"]);
-            this.ExecuteCommand = reader["ExecuteCommand"] as string;
-            this.ExecutePreCommand = reader["ExecutePreCommand"] as string;
-            this.Category = reader["Category"] as string;
-            this.CanBeShared = Convert.ToBoolean(reader["CanBeShared"]);
-            this.m_ShareApplication = Convert.ToBoolean(reader["ShareApplication"]);
-            this.FileHippoVersion = reader["FileHippoVersion"] as string;
-            this.HttpReferer = reader["HttpReferer"] as string;
-            this.m_VariableChangeIndicator = reader["VariableChangeIndicator"] as string;
-            this.HashVariable = reader["HashVariable"] as string;
-            this.HashType = (HashType)Convert.ToByte(reader["HashType"]);
-            this.m_VariableChangeIndicatorLastContent = reader["VariableChangeIndicatorLastContent"] as string;
-            this.ExclusiveDownload = Convert.ToBoolean(reader["ExclusiveDownload"]);
-            this.CheckForUpdatesOnly = Convert.ToBoolean(reader["CheckForUpdateOnly"]);
-            this.CachedPadFileVersion = reader["CachedPadFileVersion"] as string;
-            this.LastFileSize = Convert.ToInt64(reader["LastFileSize"]);
-            this.NumberOfRevisions = Convert.ToInt32(reader["NumberOfRevisions"]);
-            this.LastFileDate = reader["LastUpdated"] as DateTime?;
-            this.IgnoreFileInformation = Convert.ToBoolean(reader["IgnoreFileInformation"]);
-            this.UserNotes = reader["UserNotes"] as string;
-            this.WebsiteUrl = reader["WebsiteUrl"] as string;
-            this.UserAgent = reader["UserAgent"] as string;
-            this.SourceTemplate = reader["SourceTemplate"] as string;
-            this.m_PreviousRelativeLocation = reader["PreviousRelativeLocation"] as string;
-
-            string executeCommandType = reader["ExecuteCommandType"] as string;
-            if (executeCommandType != null)
-            {
-                this.ExecuteCommandType = Command.ConvertToScriptType(executeCommandType);
-            }
-
-            string executePreCommandType = reader["ExecutePreCommandType"] as string;
-            if (executePreCommandType != null)
-            {
-                this.ExecutePreCommandType = Command.ConvertToScriptType(executePreCommandType);
-            }
-
-            if (reader["DownloadBeta"] != DBNull.Value)
-            {
-                this.DownloadBeta = (DownloadBetaType)Convert.ToInt32(reader["DownloadBeta"]);
-            }
-            // An application has not been downloaded necessarily
-            this.DownloadDate = (reader["DownloadDate"] != DBNull.Value) ? reader["DownloadDate"] as DateTime? : null;
-            
-            string guid = reader["JobGuid"] as string;
-            this.Guid = new Guid(guid);
         }
 
         public string GetTargetFile(WebResponse netResponse, string alternateFileName)
@@ -1680,7 +1542,7 @@ namespace Ketarin
             // If carried on a USB stick, allow using the drive name
             try
             {
-                targetLocation = UrlVariable.Replace(targetLocation, "root", Path.GetPathRoot(Application.StartupPath), this);
+                targetLocation = UrlVariable.Replace(targetLocation, "root", Path.GetPathRoot(Application.StartupPath) ?? string.Empty, this);
             }
             catch (ArgumentException) { }
 
@@ -1746,46 +1608,52 @@ namespace Ketarin
 
         private static string GetMd5OfFile(string filename)
         {
-            MD5 hash = new MD5CryptoServiceProvider();
-            using (FileStream stream = File.OpenRead(filename))
+            using (MD5 hash = MD5.Create())
             {
-                byte[] localMd5 = hash.ComputeHash(stream);
-                StringBuilder result = new StringBuilder(32);
-                for (int i = 0; i < localMd5.Length; i++)
+                using (FileStream stream = File.OpenRead(filename))
                 {
-                    result.Append(localMd5[i].ToString("X2"));
+                    byte[] localMd5 = hash.ComputeHash(stream);
+                    StringBuilder result = new StringBuilder(32);
+                    for (int i = 0; i < localMd5.Length; i++)
+                    {
+                        result.Append(localMd5[i].ToString("X2"));
+                    }
+                    return result.ToString();
                 }
-                return result.ToString();
             }
         }
 
         private static string GetSha1OfFile(string filename)
         {
-            SHA1 hash = new SHA1CryptoServiceProvider();
-            using (FileStream stream = File.OpenRead(filename))
+            using (SHA1 hash = SHA1.Create())
             {
-                byte[] localSha1 = hash.ComputeHash(stream);
-                StringBuilder result = new StringBuilder(32);
-                for (int i = 0; i < localSha1.Length; i++)
+                using (FileStream stream = File.OpenRead(filename))
                 {
-                    result.Append(localSha1[i].ToString("X2"));
+                    byte[] localSha1 = hash.ComputeHash(stream);
+                    StringBuilder result = new StringBuilder(32);
+                    for (int i = 0; i < localSha1.Length; i++)
+                    {
+                        result.Append(localSha1[i].ToString("X2"));
+                    }
+                    return result.ToString();
                 }
-                return result.ToString();
             }
         }
 
         private static string GetSha256OfFile(string filename)
         {
-            SHA256 hash = new SHA256CryptoServiceProvider();
-            using (FileStream stream = File.OpenRead(filename))
+            using (SHA256 hash = SHA256.Create())
             {
-                byte[] localSha256 = hash.ComputeHash(stream);
-                StringBuilder result = new StringBuilder(64);
-                for (int i = 0; i < localSha256.Length; i++)
+                using (FileStream stream = File.OpenRead(filename))
                 {
-                    result.Append(localSha256[i].ToString("X2"));
+                    byte[] localSha256 = hash.ComputeHash(stream);
+                    StringBuilder result = new StringBuilder(64);
+                    for (int i = 0; i < localSha256.Length; i++)
+                    {
+                        result.Append(localSha256[i].ToString("X2"));
+                    }
+                    return result.ToString();
                 }
-                return result.ToString();
             }
         }
 
@@ -1793,7 +1661,7 @@ namespace Ketarin
         {
             using (FileStream stream = File.OpenRead(filename))
             {
-                using (SHA512 shaM = new SHA512Managed())
+                using (SHA512 shaM = SHA512.Create())
                 {
                     byte[] hash = shaM.ComputeHash(stream);
 
@@ -1816,7 +1684,7 @@ namespace Ketarin
         {
             LogDialog.Log(this, "Checking if update is required...");
 
-            FileInfo current = null;
+            FileInfo? current = null;
 
             if (!string.IsNullOrEmpty(targetFile))
             {

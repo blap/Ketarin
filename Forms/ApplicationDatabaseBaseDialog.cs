@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Net;
 using System.Windows.Forms;
 using CDBurnerXP.Forms;
-using CookComputing.XmlRpc;
+// Removed CookComputing.XmlRpc reference
 
 namespace Ketarin.Forms
 {
@@ -11,6 +12,7 @@ namespace Ketarin.Forms
     {
         #region Properties
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IEnumerable<RpcApplication> Applications
         {
             set
@@ -49,6 +51,10 @@ namespace Ketarin.Forms
             {
                 RpcApplication app = (RpcApplication)olvApplications.SelectedObject;
 
+                // Disabled XML-RPC functionality for .NET 9 compatibility
+                MessageBox.Show(this, "Online database functionality is not available in this version.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                /*
                 IKetarinRpc proxy = XmlRpcProxyGen.Create<IKetarinRpc>();
                 string xml = proxy.GetApplication(app.ShareId);
                 ApplicationJob resultJob = ApplicationJob.LoadOneFromXml(xml);
@@ -59,11 +65,14 @@ namespace Ketarin.Forms
                     dialog.ReadOnly = true;
                     dialog.ShowDialog(this);
                 }
+                */
             }
+            /*
             catch (XmlRpcException)
             {
                 MessageBox.Show(this, "Failed loading the selected application.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            */
             catch (WebException)
             {
                 MessageBox.Show(this, "Failed loading the selected application.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);

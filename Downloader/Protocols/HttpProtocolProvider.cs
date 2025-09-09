@@ -36,10 +36,6 @@ namespace MyDownloader.Extension.Protocols
 
         #region IProtocolProvider Members
 
-        public virtual void Initialize(Downloader downloader)
-        {
-        }
-
         public virtual Stream CreateStream(ResourceLocation rl, long initialPosition, long endPosition)
         {
             HttpWebRequest request = (HttpWebRequest)GetRequest(rl);
@@ -63,7 +59,7 @@ namespace MyDownloader.Extension.Protocols
             return response.GetResponseStream();
         }
 
-        public virtual RemoteFileInfo GetFileInfo(ResourceLocation rl, out Stream stream)
+        public virtual RemoteFileInfo GetFileInfo(ResourceLocation rl, out Stream? stream)
         {
             HttpWebRequest request = (HttpWebRequest)GetRequest(rl);
 

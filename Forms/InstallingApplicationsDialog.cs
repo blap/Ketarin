@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
@@ -28,7 +28,7 @@ namespace Ketarin.Forms
 
         private class LogItem
         {
-            public string Message { get; set; }
+            public string Message { get; set; } = string.Empty;
             public LogItemType Type { get; set; }
             public DateTime Time { get; set; }
         }
@@ -40,6 +40,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets if the dialog should be closed after finishing.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool AutoClose
         {
             get;
@@ -49,6 +50,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets whether or not the applications should be updated before installing.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool UpdateApplications
         {
             get;
@@ -58,7 +60,8 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the applications that are to be installed.
         /// </summary>
-        public ApplicationJob[] Applications
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public ApplicationJob[]? Applications
         {
             get; set;
         }
@@ -109,7 +112,7 @@ namespace Ketarin.Forms
         {
             if (InvokeRequired)
             {
-                this.Invoke((MethodInvoker)delegate() { UpdateStatus(text); });
+                this.Invoke((System.Windows.Forms.MethodInvoker)delegate() { UpdateStatus(text); });
             }
 
             this.lblSetupStatus.Text = text;
@@ -122,7 +125,7 @@ namespace Ketarin.Forms
         {
             if (InvokeRequired)
             {
-                this.Invoke((MethodInvoker)delegate() { LogInfo(text, type); });
+                this.Invoke((System.Windows.Forms.MethodInvoker)delegate() { LogInfo(text, type); });
                 return;
             }
 
@@ -134,15 +137,18 @@ namespace Ketarin.Forms
         {
             int count = 1;
 
-            foreach (ApplicationJob job in this.Applications)
+            if (this.Applications != null)
             {
-                try
+                foreach (ApplicationJob job in this.Applications)
                 {
-                    UpdateAndInstallApp(e, job, ref count);
-                }
-                catch (Exception ex)
-                {
-                    LogInfo(job.Name + ": Setup failed (" + ex.Message + ")", LogItemType.Error);
+                    try
+                    {
+                        UpdateAndInstallApp(e, job, ref count);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogInfo(job.Name + ": Setup failed (" + ex.Message + ")", LogItemType.Error);
+                    }
                 }
             }
         }
@@ -161,7 +167,7 @@ namespace Ketarin.Forms
             // Force update if no file exists
             if (this.UpdateApplications || !job.FileExists)
             {
-                UpdateStatus(string.Format("Updating application {0} of {1}: {2}", count, this.Applications.Length, job.Name));
+                UpdateStatus(string.Format("Updating application {0} of {1}: {2}", count, this.Applications?.Length ?? 0, job.Name));
 
                 Updater updater = new Updater {IgnoreCheckForUpdatesOnly = true};
                 updater.BeginUpdate(new[] { job }, false, false);
@@ -179,7 +185,7 @@ namespace Ketarin.Forms
                     Thread.Sleep(500);
                 }
 
-                this.Invoke((MethodInvoker)delegate()
+                this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
                 {
                     progressBar.Style = ProgressBarStyle.Marquee;
                 }); 
@@ -199,7 +205,7 @@ namespace Ketarin.Forms
                 }
             }
 
-            UpdateStatus(string.Format("Installing application {0} of {1}: {2}", count, this.Applications.Length, job.Name));
+            UpdateStatus(string.Format("Installing application {0} of {1}: {2}", count, this.Applications?.Length ?? 0, job.Name));
 
             job.Install(bgwSetup);
 
@@ -209,11 +215,11 @@ namespace Ketarin.Forms
             count++;
         }
 
-        private void updater_ProgressChanged(object sender, Updater.JobProgressChangedEventArgs e)
+        private void updater_ProgressChanged(object? sender, Updater.JobProgressChangedEventArgs e)
         {
             if (InvokeRequired)
             {
-                this.Invoke((MethodInvoker)delegate()
+                this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
                 {
                     updater_ProgressChanged(sender, e);
                 });
@@ -226,7 +232,7 @@ namespace Ketarin.Forms
 
         private void bgwSetup_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            UpdateStatus(string.Format("{0} of {1} applications installed successfully.", this.installCounter, this.Applications.Length));
+            UpdateStatus(string.Format("{0} of {1} applications installed successfully.", this.installCounter, this.Applications?.Length ?? 0));
             progressBar.Style = ProgressBarStyle.Blocks;
             progressBar.Value = 100;
             bCancel.Enabled = true;

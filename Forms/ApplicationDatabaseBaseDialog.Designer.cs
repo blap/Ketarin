@@ -1,7 +1,3 @@
-﻿using System.ComponentModel;
-using System.Windows.Forms;
-using CDBurnerXP.Controls;
-
 namespace Ketarin.Forms
 {
     partial class ApplicationDatabaseBaseDialog
@@ -9,7 +5,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private IContainer components = null;
+        private System.ComponentModel.IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -32,16 +28,19 @@ namespace Ketarin.Forms
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.lblResults = new System.Windows.Forms.Label();
             this.bCancel = new System.Windows.Forms.Button();
             this.bOK = new System.Windows.Forms.Button();
-            this.cmnuApplications = new System.Windows.Forms.ContextMenu();
-            this.cmnuProperties = new System.Windows.Forms.MenuItem();
+            // Replaced ContextMenu with ContextMenuStrip
+            this.cmnuApplications = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.cmnuProperties = new System.Windows.Forms.ToolStripMenuItem();
             this.olvApplications = new CDBurnerXP.Controls.FastObjectListView();
             this.colAppName = new CDBurnerXP.Controls.OLVColumn();
             this.colDate = new CDBurnerXP.Controls.OLVColumn();
             this.colUseCount = new CDBurnerXP.Controls.OLVColumn();
             ((System.ComponentModel.ISupportInitialize)(this.olvApplications)).BeginInit();
+            this.cmnuApplications.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblResults
@@ -76,14 +75,17 @@ namespace Ketarin.Forms
             this.bOK.Text = "OK";
             this.bOK.UseVisualStyleBackColor = true;
             // 
-            // cmnuApplications
+            // cmnuApplications (ContextMenuStrip)
             // 
-            this.cmnuApplications.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.cmnuApplications.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.cmnuProperties});
+            this.cmnuApplications.Name = "cmnuApplications";
+            this.cmnuApplications.Size = new System.Drawing.Size(181, 26);
             // 
             // cmnuProperties
             // 
-            this.cmnuProperties.Index = 0;
+            this.cmnuProperties.Name = "cmnuProperties";
+            this.cmnuProperties.Size = new System.Drawing.Size(180, 22);
             this.cmnuProperties.Text = "&Properties";
             this.cmnuProperties.Click += new System.EventHandler(this.cmnuProperties_Click);
             // 
@@ -102,7 +104,8 @@ namespace Ketarin.Forms
             this.colAppName,
             this.colDate,
             this.colUseCount});
-            this.olvApplications.ContextMenu = this.cmnuApplications;
+            // Replaced ContextMenu with ContextMenuStrip
+            this.olvApplications.ContextMenuStrip = this.cmnuApplications;
             this.olvApplications.FullRowSelect = true;
             this.olvApplications.HideSelection = false;
             this.olvApplications.HighlightBackgroundColor = System.Drawing.Color.Empty;
@@ -156,6 +159,7 @@ namespace Ketarin.Forms
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Available Applications";
             ((System.ComponentModel.ISupportInitialize)(this.olvApplications)).EndInit();
+            this.cmnuApplications.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -163,14 +167,15 @@ namespace Ketarin.Forms
 
         #endregion
 
-        private OLVColumn colAppName;
-        private OLVColumn colDate;
-        private ContextMenu cmnuApplications;
-        private MenuItem cmnuProperties;
-        protected Button bOK;
-        protected FastObjectListView olvApplications;
-        protected Label lblResults;
-        protected Button bCancel;
-        protected OLVColumn colUseCount;
+        protected System.Windows.Forms.Label lblResults;
+        protected System.Windows.Forms.Button bCancel;
+        protected System.Windows.Forms.Button bOK;
+        // Replaced ContextMenu with ContextMenuStrip
+        protected System.Windows.Forms.ContextMenuStrip cmnuApplications;
+        protected System.Windows.Forms.ToolStripMenuItem cmnuProperties;
+        protected CDBurnerXP.Controls.FastObjectListView olvApplications;
+        protected CDBurnerXP.Controls.OLVColumn colAppName;
+        protected CDBurnerXP.Controls.OLVColumn colDate;
+        protected CDBurnerXP.Controls.OLVColumn colUseCount;
     }
 }

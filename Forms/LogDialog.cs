@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -9,13 +9,13 @@ namespace Ketarin.Forms
 {
     public partial class LogDialog : PersistentForm
     {
-        private static LogDialog m_Instance;
+        private static LogDialog? m_Instance;
         private static readonly Queue<string> m_Log = new Queue<string>();
         private static readonly List<string> m_FullLog = new List<string>();
 
         #region Properties
 
-        public static LogDialog Instance
+        public static LogDialog? Instance
         {
             get {
                 if (m_Instance == null)
@@ -33,7 +33,7 @@ namespace Ketarin.Forms
         {
             this.InitializeComponent();
             m_Instance = this;
-            this.txtLog.ContextMenu = this.contextMenu;
+            this.txtLog.ContextMenuStrip = this.contextMenu;
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -55,7 +55,10 @@ namespace Ketarin.Forms
                     this.AppendText(m_Log.Dequeue());
                 }
 
-                m_Instance.txtLog.SelectionStart = m_Instance.txtLog.Text.Length;
+                if (m_Instance != null)
+                {
+                    m_Instance.txtLog.SelectionStart = m_Instance.txtLog.Text.Length;
+                }
             }
         }
 
@@ -140,7 +143,7 @@ namespace Ketarin.Forms
         {
             if (this.InvokeRequired)
             {
-                this.BeginInvoke((MethodInvoker)delegate
+                this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate
                 {
                     this.AddToTextBox(text);
                 });
@@ -150,7 +153,10 @@ namespace Ketarin.Forms
                 if (this.Visible) {
                     this.AppendText(text);
 
-                    this.txtLog.SelectionStart = m_Instance.txtLog.Text.Length;
+                    if (m_Instance != null)
+                    {
+                        m_Instance.txtLog.SelectionStart = m_Instance.txtLog.Text.Length;
+                    }
                 }
             }
         }

@@ -10,7 +10,7 @@ namespace Ketarin.Forms
     /// </summary>
     internal class PaintableTextBoxBase : TextBox
     {
-        public new event PaintEventHandler Paint;
+        public new event PaintEventHandler? Paint;
 
         private const int WM_Paint = 15;
         private const int WM_SETFOCUS = 0x7;
@@ -29,10 +29,7 @@ namespace Ketarin.Forms
 
                     this.OnPaint(pe);
 
-                    if (Paint != null)
-                    {
-                        Paint(this, pe);
-                    }
+                    Paint?.Invoke(this, pe);
 
                     pe.Dispose();
                 }

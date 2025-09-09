@@ -53,7 +53,7 @@ namespace Microsoft.Win32
         public static extern IntPtr CreatePopupMenu();
 
         [DllImport("user32", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern bool InsertMenu(IntPtr hmenu, int position, uint flags, IntPtr item_id, [MarshalAs(UnmanagedType.LPTStr)]string item_text);
+        public static extern bool InsertMenu(IntPtr hmenu, int position, uint flags, IntPtr item_id, [MarshalAs(UnmanagedType.LPTStr)]string? item_text);
 
         [Flags]
         public enum MenuFlags : uint

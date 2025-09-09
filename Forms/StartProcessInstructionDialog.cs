@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -15,25 +15,25 @@ namespace Ketarin.Forms
 
         private class VariableInfo
         {
-            public string Name { get; set; }
-            public string Value { get; set; }
+            public string? Name { get; set; }
+            public string? Value { get; set; }
         }
 
         #endregion
 
-        private StartProcessInstruction instruction;
+        private StartProcessInstruction? instruction;
         private readonly List<VariableInfo> variables = new List<VariableInfo>();
 
-        public override SetupInstruction SetupInstruction
+        public override SetupInstruction? SetupInstruction
         {
             set
             {
-                StartProcessInstruction instruction = value as StartProcessInstruction;
+                StartProcessInstruction? instruction = value as StartProcessInstruction;
                 if (instruction != null)
                 {
                     this.instruction = instruction;
-                    txtProgram.Text = instruction.FileName;
-                    txtParameters.Text = instruction.Parameters;
+                    txtProgram.Text = instruction.FileName ?? string.Empty;
+                    txtParameters.Text = instruction.Parameters ?? string.Empty;
                     chkWaitUntilExit.Checked = instruction.WaitForExit;
                 }
             }
@@ -55,7 +55,7 @@ namespace Ketarin.Forms
             txtProgram.SetVariableNames(this.VariableNames);
             txtParameters.SetVariableNames(this.VariableNames);
 
-            foreach (MenuItem item in this.argumentsMenu.MenuItems)
+            foreach (ToolStripMenuItem item in this.argumentsMenu.Items)
             {
                 item.Click += this.OnArgumentMenuItemClick;
             }
@@ -76,9 +76,9 @@ namespace Ketarin.Forms
             olvEnvironmentVariables.SetObjects(variables);
         }
 
-        private void OnArgumentMenuItemClick(object sender, EventArgs e)
+        private void OnArgumentMenuItemClick(object? sender, EventArgs e)
         {
-            txtParameters.AppendText(((MenuItem)sender).Tag as string);
+            txtParameters.AppendText(((ToolStripItem)sender).Tag as string);
         }
 
         private void bOK_Click(object sender, EventArgs e)

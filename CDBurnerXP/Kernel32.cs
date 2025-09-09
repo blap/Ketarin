@@ -51,7 +51,7 @@ namespace Microsoft.Win32
         /// <returns>If unloaded library was correct then true, else false</returns>
         public static bool FreeLibraryEx(IntPtr dllPointer)
         {
-            if (dllPointer != null && dllPointer != IntPtr.Zero)
+            if (dllPointer != IntPtr.Zero)
             {
                 return FreeLibrary(dllPointer);
             }
@@ -95,7 +95,7 @@ namespace Microsoft.Win32
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static string GetVolumePathName(string fileName)
+        public static string? GetVolumePathName(string fileName)
         {
             StringBuilder result = new StringBuilder(255);
             if (!GetVolumePathName(fileName, result, 255))

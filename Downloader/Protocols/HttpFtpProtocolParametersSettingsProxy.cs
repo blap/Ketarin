@@ -15,11 +15,11 @@ namespace MyDownloader.Extension.Protocols
         {
             get
             {
-                return Settings.ProxyAddress;
+                return Ketarin.Downloader.Settings.ProxyAddress;
             }
             set
             {
-                Settings.ProxyAddress = value;
+                Ketarin.Downloader.Settings.ProxyAddress = value;
             }
         }
 
@@ -27,11 +27,11 @@ namespace MyDownloader.Extension.Protocols
         {
             get
             {
-                return Settings.ProxyUserName;
+                return Ketarin.Downloader.Settings.ProxyUserName;
             }
             set
             {
-                Settings.ProxyUserName = value;
+                Ketarin.Downloader.Settings.ProxyUserName = value;
             }
         }
 
@@ -39,11 +39,11 @@ namespace MyDownloader.Extension.Protocols
         {
             get
             {
-                return Settings.ProxyPassword;
+                return Ketarin.Downloader.Settings.ProxyPassword;
             }
             set
             {
-                Settings.ProxyPassword = value;
+                Ketarin.Downloader.Settings.ProxyPassword = value;
             }
         }
 
@@ -51,11 +51,11 @@ namespace MyDownloader.Extension.Protocols
         {
             get
             {
-                return Settings.ProxyDomain;
+                return Ketarin.Downloader.Settings.ProxyDomain;
             }
             set
             {
-                Settings.ProxyDomain = value;
+                Ketarin.Downloader.Settings.ProxyDomain = value;
             }
         }
 
@@ -63,11 +63,11 @@ namespace MyDownloader.Extension.Protocols
         {
             get
             {
-                return Settings.UseProxy;
+                return Ketarin.Downloader.Settings.UseProxy;
             }
             set
             {
-                Settings.UseProxy = value;
+                Ketarin.Downloader.Settings.UseProxy = value;
             }
         }
 
@@ -75,11 +75,11 @@ namespace MyDownloader.Extension.Protocols
         {
             get
             {
-                return Settings.ProxyByPassOnLocal;
+                return Ketarin.Downloader.Settings.ProxyByPassOnLocal;
             }
             set
             {
-                Settings.ProxyByPassOnLocal = value;
+                Ketarin.Downloader.Settings.ProxyByPassOnLocal = value;
             }
         }
 
@@ -87,11 +87,11 @@ namespace MyDownloader.Extension.Protocols
         {
             get
             {
-                return Settings.ProxyPort;
+                return Ketarin.Downloader.Settings.ProxyPort;
             }
             set
             {
-                Settings.ProxyPort = value;
+                Ketarin.Downloader.Settings.ProxyPort = value;
             }
         }
 

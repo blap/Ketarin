@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
@@ -15,7 +15,7 @@ namespace CDBurnerXP.IO
         {
             try
             {
-                IDataObject dataObject = Clipboard.GetDataObject();
+                IDataObject? dataObject = Clipboard.GetDataObject();
                 if (dataObject != null)
                     return dataObject.GetDataPresent(format);
             }
@@ -23,11 +23,11 @@ namespace CDBurnerXP.IO
             return false;
         }
 
-        public static object GetData(string format)
+        public static object? GetData(string format)
         {
             try
             {
-                IDataObject dataObject = Clipboard.GetDataObject();
+                IDataObject? dataObject = Clipboard.GetDataObject();
                 if (dataObject != null)
                     return dataObject.GetData(format);
             }
@@ -35,11 +35,11 @@ namespace CDBurnerXP.IO
             return null;
         }
 
-        public static bool SetData(object value, bool copy)
+        public static bool SetData(object? value, bool copy)
         {
             try
             {
-                Clipboard.SetDataObject(value, copy, 2, 50);
+                Clipboard.SetDataObject(value ?? new object(), copy, 2, 50);
                 return true;
             }
             catch (ExternalException)

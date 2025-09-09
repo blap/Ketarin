@@ -16,7 +16,7 @@ namespace MyDownloader.Core
         private long fileSize;
         private DateTime lastModified = DateTime.MinValue;
 
-        private string mimeType;
+        private string mimeType = string.Empty;
 
         public string MimeType
         {

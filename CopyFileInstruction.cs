@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace Ketarin
@@ -12,12 +12,12 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets the source file to copy.
         /// </summary>
-        public string Source { get; set; }
+        public string Source { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the target location.
         /// </summary>
-        public string Target { get; set; }
+        public string Target { get; set; } = string.Empty;
 
         public override string Name
         {
@@ -39,7 +39,11 @@ namespace Ketarin
             string target = Environment.ExpandEnvironmentVariables(Application.Variables.ReplaceAllInString(Target));
 
             // Ensure that target dir exists
-            Directory.CreateDirectory(Path.GetDirectoryName(target));
+            string? targetDir = Path.GetDirectoryName(target);
+            if (!string.IsNullOrEmpty(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+            }
 
             File.Copy(source, target, true);
         }

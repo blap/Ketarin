@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ketarin.Forms
 {
@@ -8,20 +8,20 @@ namespace Ketarin.Forms
     /// </summary>
     public partial class CustomSetupInstructionDialog : InstructionBaseDialog
     {
-        private CustomSetupInstruction instruction;
+        private CustomSetupInstruction? instruction;
 
         #region Properties
 
-        public override SetupInstruction SetupInstruction
+        public override SetupInstruction? SetupInstruction
         {
             set
             {
-                CustomSetupInstruction instruction = value as CustomSetupInstruction;
+                CustomSetupInstruction? instruction = value as CustomSetupInstruction;
                 if (instruction != null)
                 {
                     this.instruction = instruction;
                     commandControl.CommandType = this.instruction.Type;
-                    commandControl.Text = this.instruction.Code;
+                    commandControl.Text = this.instruction.Code ?? string.Empty;
                 }
             }
             get
@@ -52,8 +52,8 @@ namespace Ketarin.Forms
                 this.instruction = new CustomSetupInstruction();
             }
 
-            this.instruction.Code = commandControl.Text;
-            this.instruction.Type = commandControl.CommandType;
+            this.instruction!.Code = commandControl.Text;
+            this.instruction!.Type = commandControl.CommandType;
         }
     }
 }

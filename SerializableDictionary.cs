@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -8,10 +8,11 @@ namespace Ketarin
     [XmlRoot("dictionary")]
     public class SerializableDictionary<TKey, TValue>
         : Dictionary<TKey, TValue>, IXmlSerializable
+        where TKey : notnull
     {
         #region IXmlSerializable Members
 
-        public XmlSchema GetSchema()
+        public XmlSchema? GetSchema()
         {
             return null;
         }
@@ -32,11 +33,13 @@ namespace Ketarin
                 reader.ReadStartElement("item");
 
                 reader.ReadStartElement("key");
-                TKey key = (TKey)keySerializer.Deserialize(reader);
+                object? keyObj = keySerializer.Deserialize(reader);
+                TKey key = keyObj != null ? (TKey)keyObj : default(TKey)!;
                 reader.ReadEndElement();
 
                 reader.ReadStartElement("value");
-                TValue value = (TValue)valueSerializer.Deserialize(reader);
+                object? valueObj = valueSerializer.Deserialize(reader);
+                TValue value = valueObj != null ? (TValue)valueObj : default(TValue)!;
                 reader.ReadEndElement();
 
                 this.Add(key, value);

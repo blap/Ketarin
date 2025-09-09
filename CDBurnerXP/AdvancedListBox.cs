@@ -17,9 +17,9 @@ namespace CDBurnerXP.Controls
 
         public class ItemChosenEventArgs : EventArgs
         {
-            private ListBoxPanel m_Panel = null;
+            private ListBoxPanel? m_Panel = null;
 
-            public ListBoxPanel ChosenPanel
+            public ListBoxPanel? ChosenPanel
             {
                 get
                 {
@@ -27,7 +27,7 @@ namespace CDBurnerXP.Controls
                 }
             }
 
-            public ItemChosenEventArgs(ListBoxPanel panel)
+            public ItemChosenEventArgs(ListBoxPanel? panel)
             {
                 m_Panel = panel;
             }
@@ -66,11 +66,12 @@ namespace CDBurnerXP.Controls
         /// Occurs when an item is selected and the user hits Enter/Return,
         /// or the user double clicks on an item.
         /// </summary>
-        public event EventHandler<ItemChosenEventArgs> ItemChosen;
+        public event EventHandler<ItemChosenEventArgs>? ItemChosen;
 
         #region Properties
 
-        public ListBoxPanel SelectedPanel
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public ListBoxPanel? SelectedPanel
         {
             get
             {
@@ -134,25 +135,31 @@ namespace CDBurnerXP.Controls
             this.tableLayout.ControlRemoved += new ControlEventHandler(tableLayout_ControlRemoved);
         }
 
-        private void tableLayout_ControlRemoved(object sender, ControlEventArgs e)
+        private void tableLayout_ControlRemoved(object? sender, ControlEventArgs e)
         {
-            ListBoxPanel panel = e.Control as ListBoxPanel;
+            ListBoxPanel? panel = sender as ListBoxPanel;
             if (panel != null)
             {
                 m_Panels.Remove(panel);
             }
         }
 
-        private void m_Panels_PanelRemoved(object sender, EventArgs e)
+        private void m_Panels_PanelRemoved(object? sender, EventArgs e)
         {
-            ListBoxPanel panel = sender as ListBoxPanel;
-            OnPanelRemove(panel);
+            ListBoxPanel? panel = sender as ListBoxPanel;
+            if (panel != null)
+            {
+                OnPanelRemove(panel);
+            }
         }
 
-        private void m_Panels_PanelAdded(object sender, EventArgs e)
+        private void m_Panels_PanelAdded(object? sender, EventArgs e)
         {
-            ListBoxPanel panel = sender as ListBoxPanel;
-            OnPanelAdd(panel);            
+            ListBoxPanel? panel = sender as ListBoxPanel;
+            if (panel != null)
+            {
+                OnPanelAdd(panel);            
+            }
         }
 
         protected virtual void OnItemChosen(ItemChosenEventArgs e)
@@ -178,17 +185,24 @@ namespace CDBurnerXP.Controls
             panel.DoubleClick += new EventHandler(OnPanelDoubleClick);
 
             // Prevent flicker and the like
-            using (new ControlRedrawLock(this.Parent))
+            if (this.Parent != null)
             {
-                // Brute force scrollbar update
-                this.Width += 1;
-                this.Width -= 1;
+                using (new ControlRedrawLock(this.Parent))
+                {
+                    // Brute force scrollbar update
+                    this.Width += 1;
+                    this.Width -= 1;
+                }
             }
         }
 
-        void OnPanelDoubleClick(object sender, EventArgs e)
+        void OnPanelDoubleClick(object? sender, EventArgs e)
         {
-            OnItemChosen(new ItemChosenEventArgs(sender as ListBoxPanel));
+            ListBoxPanel? panel = sender as ListBoxPanel;
+            if (panel != null)
+            {
+                OnItemChosen(new ItemChosenEventArgs(panel));
+            }
         }
 
         protected override void WndProc(ref Message m)
@@ -272,9 +286,10 @@ namespace CDBurnerXP.Controls
 
             foreach (Control control in tableLayout.Controls)
             {
-                if (control is ListBoxPanel)
+                ListBoxPanel? panel = control as ListBoxPanel;
+                if (panel != null)
                 {
-                    panels.Add(control as ListBoxPanel);
+                    panels.Add(panel);
                 }
             }
 

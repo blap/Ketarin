@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
@@ -21,13 +21,13 @@ namespace CDBurnerXP.Forms
         public delegate void CancelActionDelegate();
         public delegate string UpdateStatusDelegate();
 
-        private object m_Result = null;
-        private AddingFilesDelegate m_DoWorkDelegate;
-        private CancelActionDelegate m_CancelActionDelegate;
-        private UpdateStatusDelegate m_UpdateStatusDelegate;
+        private object? m_Result = null;
+        private AddingFilesDelegate? m_DoWorkDelegate;
+        private CancelActionDelegate? m_CancelActionDelegate = null;
+        private UpdateStatusDelegate? m_UpdateStatusDelegate = null;
         private bool m_Cancelled = false;
         private bool m_SelfCancelled = false;
-        private Exception m_Error = null;
+        private Exception? m_Error = null;
         private DateTime lastIdleReset = DateTime.MinValue;
 
         #region Properties
@@ -36,7 +36,8 @@ namespace CDBurnerXP.Forms
         /// If an error occured during the operation, its exception
         /// will be stored and accessible here.
         /// </summary>
-        public Exception Error
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public Exception? Error
         {
             get { return m_Error; }
             set { m_Error = value; }
@@ -52,14 +53,20 @@ namespace CDBurnerXP.Forms
         }
 #endif
 
+        private string m_StatusText = string.Empty;
+        
+        [Browsable(false)]
         public string StatusText
         {
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             get
             {
-                return lblStatus.Text;
+                return m_StatusText;
             }
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             set
             {
+                m_StatusText = value;
                 lblStatus.Text = CompactString(value, tableLayoutPanel1.Width - 15, Font, "");
                 lblStatus.Visible = !string.IsNullOrEmpty(lblStatus.Text);
             }
@@ -82,7 +89,8 @@ namespace CDBurnerXP.Forms
         /// a couple of times per second and displays the
         /// information (if available).
         /// </summary>
-        public UpdateStatusDelegate OnUpdateStatus
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public UpdateStatusDelegate? OnUpdateStatus
         {
             get
             {
@@ -102,12 +110,15 @@ namespace CDBurnerXP.Forms
             }
         }
 
-        public CancelActionDelegate OnCancel
+        [Browsable(false)]
+        public CancelActionDelegate? OnCancel
         {
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             get
             {
                 return m_CancelActionDelegate;
             }
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
             set
             {
                 if (m_CancelActionDelegate != value)
@@ -125,7 +136,7 @@ namespace CDBurnerXP.Forms
             {
                 if (this.InvokeRequired)
                 {
-                    this.Invoke(new MethodInvoker(delegate()
+                    this.Invoke(new System.Windows.Forms.MethodInvoker(delegate()
                     {
                         CancelEnabled = value;
                     }));
@@ -138,7 +149,8 @@ namespace CDBurnerXP.Forms
             }
         }
 
-        public AddingFilesDelegate OnDoWork
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public AddingFilesDelegate? OnDoWork
         {
             get
             {
@@ -150,7 +162,7 @@ namespace CDBurnerXP.Forms
             }
         }
 
-        public object Result
+        public object? Result
         {
             get
             {
@@ -176,7 +188,7 @@ namespace CDBurnerXP.Forms
         {
             if (this.prgProgress.InvokeRequired)
             {
-                this.prgProgress.Invoke(new MethodInvoker(delegate { ReportProgress(value); }));
+                this.prgProgress.Invoke(new System.Windows.Forms.MethodInvoker(delegate { ReportProgress(value); }));
             }
             else
             {
@@ -246,9 +258,12 @@ namespace CDBurnerXP.Forms
             }
         }
 
-        private void m_Worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void m_Worker_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
         {
-            prgProgress.Value = 100;
+            if (prgProgress != null)
+            {
+                prgProgress.Value = 100;
+            }
             m_Error = e.Error;
             Close();
         }
@@ -274,7 +289,7 @@ namespace CDBurnerXP.Forms
             }
         }
 
-        private void bCancel_Click(object sender, EventArgs e)
+        private void bCancel_Click(object? sender, EventArgs e)
         {
             bCancel.Enabled = false;
             if (m_CancelActionDelegate != null) m_CancelActionDelegate();
@@ -305,9 +320,20 @@ namespace CDBurnerXP.Forms
                 return string.Empty;
             }
 
-            string result = string.Copy(myString);
+            // Create a new string instead of using string.Copy (which is obsolete)
+            string result = string.IsNullOrEmpty(myString) ? string.Empty : new string(myString.ToCharArray());
             width -= TextRenderer.MeasureText(otherText, font).Width;
-            TextRenderer.MeasureText(result, font, new Size(width, 0), TextFormatFlags.PathEllipsis | TextFormatFlags.ModifyString);
+            
+            // Use a different approach instead of TextFormatFlags.ModifyString (which is obsolete)
+            Size textSize = TextRenderer.MeasureText(result, font, new Size(width, 0), TextFormatFlags.PathEllipsis);
+            
+            // If the text is too long, truncate it manually
+            if (textSize.Width > width)
+            {
+                // Simple approach: truncate and add ellipsis
+                result = result.Length > 3 ? result.Substring(0, Math.Max(0, result.Length - 3)) + "..." : result;
+            }
+            
             return result;
         }
     }

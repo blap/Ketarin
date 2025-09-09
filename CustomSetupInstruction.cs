@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ketarin
 {
@@ -13,12 +13,12 @@ namespace Ketarin
         /// <summary>
         /// Gets or sets the code of the setup instruction.
         /// </summary>
-        public string Code { get; set; }
+        public string Code { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the type of command.
         /// </summary>
-        public ScriptType Type { get; set; }
+        public ScriptType Type { get; set; } = ScriptType.Batch;
 
         public override string Name
         {
@@ -44,7 +44,7 @@ namespace Ketarin
         {
             if (string.IsNullOrEmpty(Code))
             {
-                return string.Empty;
+                return base.ToString() ?? string.Empty;
             }
 
             string[] lines = Code.Split('\n');
@@ -53,7 +53,7 @@ namespace Ketarin
                 return lines[0];
             }
 
-            return base.ToString();
+            return base.ToString() ?? string.Empty;
         }
     }
 }

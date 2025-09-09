@@ -62,10 +62,10 @@ namespace CDBurnerXP.Controls
                 }
                 if (m.Msg == WM_GETTEXT && doubleclickflag)
                 {
-                    object currentClipboardContent = SafeClipboard.GetData(DataFormats.Text);
+                    object? currentClipboardContent = SafeClipboard.GetData(DataFormats.Text);
                     if (currentClipboardContent != null)
                     {
-                        this.BeginInvoke((MethodInvoker) delegate()
+                        this.BeginInvoke((System.Windows.Forms.MethodInvoker) delegate()
                         {
                             SafeClipboard.SetData(currentClipboardContent, true);
                         });
@@ -110,13 +110,16 @@ namespace CDBurnerXP.Controls
                 }
 
                 // Prevent flicker and the like
-                using (new ControlRedrawLock(this.Parent))
+                if (this.Parent != null)
                 {
-                    // Brute force scrollbar update
-                    this.Parent.Width += 1;
-                    this.Parent.Width -= 1;
+                    using (new ControlRedrawLock(this.Parent))
+                    {
+                        // Brute force scrollbar update
+                        this.Parent.Width += 1;
+                        this.Parent.Width -= 1;
 
-                    SetFontColor(this);
+                        SetFontColor(this);
+                    }
                 }
             }
         }
@@ -184,25 +187,25 @@ namespace CDBurnerXP.Controls
             }
         }
 
-        void OnChildGotFocus(object sender, EventArgs e)
+        void OnChildGotFocus(object? sender, EventArgs e)
         {
             Selected = true;
             SetFontColor(this);
             Invalidate();
         }
 
-        void OnChildLostFocus(object sender, EventArgs e)
+        void OnChildLostFocus(object? sender, EventArgs e)
         {
             SetFontColor(this);
             Invalidate();
         }
 
-        void OnChildDoubleClick(object sender, EventArgs e)
+        void OnChildDoubleClick(object? sender, EventArgs e)
         {
             OnDoubleClick(e);
         }
 
-        void OnChildMouseDown(object sender, MouseEventArgs e)
+        void OnChildMouseDown(object? sender, MouseEventArgs e)
         {
             Selected = true;
             Focus();
@@ -213,16 +216,22 @@ namespace CDBurnerXP.Controls
         {
             base.OnControlAdded(e);
 
-            e.Control.GotFocus += new EventHandler(OnChildGotFocus);
-            e.Control.LostFocus += new EventHandler(OnChildLostFocus);
+            if (e.Control != null)
+            {
+                e.Control.GotFocus += new EventHandler(OnChildGotFocus);
+                e.Control.LostFocus += new EventHandler(OnChildLostFocus);
+            }
         }
 
         protected override void OnControlRemoved(ControlEventArgs e)
         {
             base.OnControlRemoved(e);
 
-            e.Control.GotFocus -= new EventHandler(OnChildGotFocus);
-            e.Control.LostFocus -= new EventHandler(OnChildLostFocus);
+            if (e.Control != null)
+            {
+                e.Control.GotFocus -= new EventHandler(OnChildGotFocus);
+                e.Control.LostFocus -= new EventHandler(OnChildLostFocus);
+            }
         }
 
         #endregion
@@ -237,11 +246,11 @@ namespace CDBurnerXP.Controls
             return false;
         }
 
-        protected override void OnPaintBackground(PaintEventArgs e)
+        protected override void OnPaint(PaintEventArgs e)
         {
             if (Selected)
             {
-                Brush brush = null;
+                Brush? brush = null;
                 if (FocusedOrChildFocused(this))
                 {
                     brush = new LinearGradientBrush(new Point(0, 0), new Point(0, Height * 3), SystemColors.Highlight, SystemColors.Window);
@@ -250,8 +259,8 @@ namespace CDBurnerXP.Controls
                 {
                     brush = new SolidBrush(SystemColors.Control);
                 }
-                e.Graphics.FillRectangle(brush, ClientRectangle);
-                brush.Dispose();
+                e.Graphics.FillRectangle(brush!, ClientRectangle);
+                brush!.Dispose();
             }
             else
             {
@@ -261,7 +270,8 @@ namespace CDBurnerXP.Controls
             // The last panel should not draw the bottom line
             if (Parent != null)
             {
-                AdvancedListBox advancedList = Parent.Parent as AdvancedListBox;
+                Control? parentParent = Parent.Parent;
+                AdvancedListBox? advancedList = parentParent as AdvancedListBox;
                 if (advancedList != null && advancedList.IsPanelLast(this)) return;
             }
 
@@ -303,11 +313,17 @@ namespace CDBurnerXP.Controls
             switch (keyData)
             {
                 case Keys.Up:
-                    Parent.SelectNextControl(this, false, true, false, true);
+                    if (Parent != null)
+                    {
+                        Parent.SelectNextControl(this, false, true, false, true);
+                    }
                     return true;
 
                 case Keys.Down:
-                    Parent.SelectNextControl(this, true, true, false, true);
+                    if (Parent != null)
+                    {
+                        Parent.SelectNextControl(this, true, true, false, true);
+                    }
                     return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);

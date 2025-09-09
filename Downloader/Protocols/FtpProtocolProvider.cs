@@ -15,7 +15,7 @@ namespace MyDownloader.Extension.Protocols
         {
             if (rl.Authenticate)
             {
-                string login = rl.Login;
+                string login = rl.Login ?? string.Empty;
                 string domain = string.Empty;
 
                 int slashIndex = login.IndexOf('\\');
@@ -26,7 +26,7 @@ namespace MyDownloader.Extension.Protocols
                     login = login.Substring(slashIndex + 1);
                 }
 
-                NetworkCredential myCred = new NetworkCredential(login, rl.Password);
+                NetworkCredential myCred = new NetworkCredential(login, rl.Password ?? string.Empty);
                 myCred.Domain = domain;
 
                 request.Credentials = myCred;
@@ -34,10 +34,6 @@ namespace MyDownloader.Extension.Protocols
         }
 
         #region IProtocolProvider Members
-
-        public void Initialize(Downloader downloader)
-        {
-        }
 
         public Stream CreateStream(ResourceLocation rl, long initialPosition, long endPosition)
         {
@@ -53,7 +49,7 @@ namespace MyDownloader.Extension.Protocols
             return response.GetResponseStream();
         }
 
-        public RemoteFileInfo GetFileInfo(ResourceLocation rl, out Stream stream)
+        public RemoteFileInfo GetFileInfo(ResourceLocation rl, out Stream? stream)
         {
             FtpWebRequest request;
 

@@ -14,12 +14,12 @@ namespace MyDownloader.Core
     {
         private long startPosition;
         private int index;
-        private string currentURL;
+        private string currentURL = string.Empty;
         private long initialStartPosition;
         private long endPosition;
-        private Stream outputStream;
-        private Stream inputStream;
-        private Exception lastError;
+        private Stream outputStream = Stream.Null;
+        private Stream inputStream = Stream.Null;
+        private Exception? lastError = null;
         private SegmentState state;
         private bool started = false;
         private DateTime lastReception = DateTime.MinValue;
@@ -70,7 +70,7 @@ namespace MyDownloader.Core
             }
         }
 
-        public Exception LastError
+        public Exception? LastError
         {
             get
             {

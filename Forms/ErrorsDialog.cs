@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.ComponentModel;
 using System.Text;
 using CDBurnerXP.Forms;
 using CDBurnerXP.IO;
@@ -18,6 +19,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the errors which are to be shown in the dialog.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         internal ApplicationJobError[] Errors
         {
             get { return m_Errors; }

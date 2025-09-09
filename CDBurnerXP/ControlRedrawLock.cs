@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
@@ -7,7 +7,7 @@ namespace CDBurnerXP.Forms
 {
     public class ControlRedrawLock : IDisposable
     {
-        private Control _control;
+        private Control? _control;
         private bool _invalidate;
         private bool _disabledRedraw = false;
 
@@ -44,14 +44,14 @@ namespace CDBurnerXP.Forms
         {
             try
             {
-                if (IsValidControl() && _disabledRedraw)
+                if (_disabledRedraw)
                 {
                     // Unlock drawing
-                    _control.ResumeLayout();
+                    _control?.ResumeLayout();
                     if (_invalidate)
                     {
                         // Invalidate the control to trigger a re-paint.
-                        _control.Invalidate(true);
+                        _control?.Invalidate(true);
                     }
                 }
             }

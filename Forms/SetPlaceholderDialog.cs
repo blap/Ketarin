@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
@@ -25,10 +26,10 @@ namespace Ketarin.Forms
         /// </summary>
         private class Placeholder
         {
-            public string Name { get; set; }
-            public string[] Options { get; set; }
-            public string Value { get; set; }
-            public string Variable { get; set; }
+            public string? Name { get; set; }
+            public string[]? Options { get; set; }
+            public string? Value { get; set; }
+            public string? Variable { get; set; }
         }
 
         #endregion
@@ -38,17 +39,18 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets a list of all entered placeholder values.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Dictionary<string, string> Placeholders
         {
             get
             {
                 foreach (Control control in tblMain.Controls)
                 {
-                    Placeholder placeholder = control.Tag as Placeholder;
+                    Placeholder? placeholder = control.Tag as Placeholder;
                     // Only copy the values from controls that have not been determined automatically
-                    if (placeholder != null && (!result.ContainsKey(placeholder.Name) || string.IsNullOrEmpty(result[placeholder.Name])))
+                    if (placeholder?.Name != null && (!result.ContainsKey(placeholder.Name) || string.IsNullOrEmpty(result[placeholder.Name])))
                     {
-                        result[placeholder.Name] = control.Text;
+                        result[placeholder.Name] = control.Text ?? string.Empty;
                     }
                 }
                 return result;
@@ -78,7 +80,7 @@ namespace Ketarin.Forms
             {
                 Label placeholderLabel = new Label
                 {
-                    Text = placeholder.Name + ":",
+                    Text = (placeholder.Name ?? "") + ":",
                     Dock = DockStyle.Fill,
                     AutoSize = true,
                     TextAlign = ContentAlignment.MiddleLeft
@@ -87,7 +89,7 @@ namespace Ketarin.Forms
 
                 Control placeholderEditControl;
 
-                if (placeholder.Options.Length == 0)
+                if ((placeholder.Options?.Length ?? 0) == 0)
                 {
                     TextBox placeholderTextBox = new TextBox();
                     placeholderEditControl = placeholderTextBox;
@@ -103,13 +105,20 @@ namespace Ketarin.Forms
                     placeholderTextBox.Tag = placeholder;
                     placeholderTextBox.Dock = DockStyle.Fill;
                     tblMain.Controls.Add(placeholderTextBox);
-                    if (string.Compare(placeholder.Options[0], "{categories}", true) == 0)
+                    if (placeholder.Options != null && placeholder.Options.Length > 0 && string.Compare(placeholder.Options[0], "{categories}", true) == 0)
                     {
-                        placeholderTextBox.Items.AddRange(DbManager.GetCategories());
+                        string[] categories = DbManager.GetCategories();
+                        if (categories.Length > 0)
+                        {
+                            placeholderTextBox.Items.AddRange(categories);
+                        }
                     }
                     else
                     {
-                        placeholderTextBox.Items.AddRange(placeholder.Options);
+                        if (placeholder.Options != null)
+                        {
+                            placeholderTextBox.Items.AddRange(placeholder.Options);
+                        }
                         placeholderTextBox.Text = placeholder.Value ?? string.Empty;
                         if (placeholderTextBox.Items.Count > 0)
                         {
@@ -154,7 +163,7 @@ namespace Ketarin.Forms
                 else
                 {
                     // Initial value for XML parsing required
-                    this.result[placeholder.Name] = string.Empty;
+                    this.result[placeholder.Name ?? ""] = string.Empty;
                 }
             }
 
@@ -219,7 +228,10 @@ namespace Ketarin.Forms
                             throw new ApplicationException("\"" + placeholder.Name + "\" is undefined.");
                         }
 
-                        this.result[placeholder.Name] = newValue;
+                        if (placeholder.Name != null)
+                        {
+                            this.result[placeholder.Name] = newValue ?? string.Empty;
+                        }
                     }
                 }
             }

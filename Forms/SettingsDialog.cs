@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -26,6 +26,7 @@ namespace Ketarin.Forms
                 get { return this.resultKeys; }
             }
 
+            [System.Diagnostics.CodeAnalysis.AllowNull]
             public override string Text
             {
                 get
@@ -34,7 +35,7 @@ namespace Ketarin.Forms
                 }
                 set
                 {
-                    base.Text = value;
+                    base.Text = value ?? string.Empty;
                     this.resultKeys = Keys.None;
                 }
             }
@@ -58,7 +59,7 @@ namespace Ketarin.Forms
         private readonly DataTable globalVarsTable = new DataTable();
         private SerializableDictionary<string, string> cachedCustomColumns = new SerializableDictionary<string, string>();
         private readonly List<Hotkey> hotkeys = new List<Hotkey>();
-        private Hotkey currentSelectedHotkey;
+        private Hotkey? currentSelectedHotkey;
 
         #region Properties
 
@@ -74,25 +75,26 @@ namespace Ketarin.Forms
         {
             get
             {
-                string customColumnsXml = Settings.GetValue("CustomColumns", "") as string;
+                string? customColumnsXml = Settings.GetValue("CustomColumns", "") as string;
                 if (!string.IsNullOrEmpty(customColumnsXml))
                 {
                     XmlSerializer serializer = new XmlSerializer(typeof(SerializableDictionary<string, string>));
                     using (StringReader reader = new StringReader(customColumnsXml))
                     {
-                        return serializer.Deserialize(reader) as SerializableDictionary<string, string>;
+                        object? result = serializer.Deserialize(reader);
+                        return result as SerializableDictionary<string, string> ?? new SerializableDictionary<string, string>();
                     }
                 }
 
                 SerializableDictionary<string, string> oldColumns = new SerializableDictionary<string, string>();
 
                 // Convert old custom columns if necessary
-                string custOld1 = Settings.GetValue("CustomColumn", null) as string;
+                string? custOld1 = Settings.GetValue("CustomColumn", null!) as string;
                 if (custOld1 != null)
                 {
                     oldColumns.Add("Custom Value", custOld1);
                 }
-                string custOld2 = Settings.GetValue("CustomColumn2", null) as string;
+                string? custOld2 = Settings.GetValue("CustomColumn2", null!) as string;
                 if (custOld2 != null)
                 {
                     oldColumns.Add("Custom Value 2", custOld2);
@@ -106,7 +108,7 @@ namespace Ketarin.Forms
                 using (StringWriter writer = new StringWriter())
                 {
                     serializer.Serialize(writer, value);
-                    Settings.SetValue("CustomColumns", writer.ToString());
+                    Settings.SetValue("CustomColumns", writer.ToString() ?? string.Empty);
                 }
             }
         }
@@ -168,10 +170,10 @@ namespace Ketarin.Forms
             this.chkAvoidNonBinary.Checked = (bool)Settings.GetValue("AvoidDownloadingNonBinaryFiles", true);
 
             this.nProxyPort.Value = Convert.ToInt16(Settings.GetValue("ProxyPort", 0));
-            this.txtProxyServer.Text = Settings.GetValue("ProxyServer", "") as string;
-            this.txtProxyUser.Text = Settings.GetValue("ProxyUser", "") as string;
-            this.txtProxyPassword.Text = Settings.GetValue("ProxyPassword", "") as string;
-            this.txtUserAgent.Text = Settings.GetValue("DefaultUserAgent", WebClient.DefaultUserAgent) as string;
+            this.txtProxyServer.Text = Settings.GetValue("ProxyServer", "") as string ?? string.Empty;
+            this.txtProxyUser.Text = Settings.GetValue("ProxyUser", "") as string ?? string.Empty;
+            this.txtProxyPassword.Text = Settings.GetValue("ProxyPassword", "") as string ?? string.Empty;
+            this.txtUserAgent.Text = Settings.GetValue("DefaultUserAgent", WebClient.DefaultUserAgent) as string ?? string.Empty;
 
             this.LoadCommand();
             this.LoadGlobalVariables();
@@ -187,8 +189,8 @@ namespace Ketarin.Forms
             CustomColumns = this.cachedCustomColumns;
 
             // Remove old custom columns
-            Settings.SetValue("CustomColumn", null);
-            Settings.SetValue("CustomColumn2", null);
+            Settings.SetValue("CustomColumn", string.Empty);
+            Settings.SetValue("CustomColumn2", string.Empty);
 
             Settings.SetValue("UpdateAtStartup", this.chkUpdateAtStartup.Checked);
             Settings.SetValue("AvoidFileHippoBeta", this.chkAvoidBeta.Checked);
@@ -276,12 +278,12 @@ namespace Ketarin.Forms
 
             foreach (DataRow row in this.globalVarsTable.Rows)
             {
-                string varName = row[0] as string;
+                string varName = row[0] as string ?? string.Empty;
                 // Skip variables without name
                 if (string.IsNullOrEmpty(varName)) continue;
 
-                UrlVariable newVariable = new UrlVariable(varName, null) {CachedContent = row[1] as string};
-                UrlVariable.GlobalVariables[varName] = newVariable;
+                UrlVariable newVariable = new UrlVariable(varName, null) {CachedContent = row[1] as string ?? string.Empty};
+                if (varName != null) UrlVariable.GlobalVariables[varName] = newVariable;
             }
 
             UrlVariable.GlobalVariables.Save();
@@ -299,23 +301,23 @@ namespace Ketarin.Forms
             switch (this.currentSelectedCommandEvent)
             {
                 case 0:
-                    Settings.SetValue("PreUpdateCommand", this.commandControl.Text);
-                    Settings.SetValue("PreUpdateCommandType", this.commandControl.CommandType.ToString());
+                    Settings.SetValue("PreUpdateCommand", this.commandControl.Text ?? string.Empty);
+                    Settings.SetValue("PreUpdateCommandType", this.commandControl.CommandType.ToString() ?? string.Empty);
                     break;
 
                 case 1:
-                    Settings.SetValue("DefaultCommand", this.commandControl.Text);
-                    Settings.SetValue("DefaultCommandType", this.commandControl.CommandType.ToString());
+                    Settings.SetValue("DefaultCommand", this.commandControl.Text ?? string.Empty);
+                    Settings.SetValue("DefaultCommandType", this.commandControl.CommandType.ToString() ?? string.Empty);
                     break;
 
                 case 2:
-                    Settings.SetValue("PostUpdateCommand", this.commandControl.Text);
-                    Settings.SetValue("PostUpdateCommandType", this.commandControl.CommandType.ToString());
+                    Settings.SetValue("PostUpdateCommand", this.commandControl.Text ?? string.Empty);
+                    Settings.SetValue("PostUpdateCommandType", this.commandControl.CommandType.ToString() ?? string.Empty);
                     break;
 
                 case 3:
-                    Settings.SetValue("UpdateFailedCommand", this.commandControl.Text);
-                    Settings.SetValue("UpdateFailedCommandType", this.commandControl.CommandType.ToString());
+                    Settings.SetValue("UpdateFailedCommand", this.commandControl.Text ?? string.Empty);
+                    Settings.SetValue("UpdateFailedCommandType", this.commandControl.CommandType.ToString() ?? string.Empty);
                     break;
             }            
         }
@@ -336,23 +338,23 @@ namespace Ketarin.Forms
             switch (this.cboCommandEvent.SelectedIndex)
             {
                 case 0:
-                    this.commandControl.Text = Settings.GetValue("PreUpdateCommand", "") as string;
-                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("PreUpdateCommandType", ScriptType.Batch.ToString()) as string);
+                    this.commandControl.Text = Settings.GetValue("PreUpdateCommand", "") as string ?? string.Empty;
+                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("PreUpdateCommandType", ScriptType.Batch.ToString()) as string ?? ScriptType.Batch.ToString());
                     break;
 
                 case 1:
-                    this.commandControl.Text = Settings.GetValue("DefaultCommand", "") as string;
-                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("DefaultCommandType", ScriptType.Batch.ToString()) as string);
+                    this.commandControl.Text = Settings.GetValue("DefaultCommand", "") as string ?? string.Empty;
+                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("DefaultCommandType", ScriptType.Batch.ToString()) as string ?? ScriptType.Batch.ToString());
                     break;
 
                 case 2:
-                    this.commandControl.Text = Settings.GetValue("PostUpdateCommand", "") as string;
-                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("PostUpdateCommandType", ScriptType.Batch.ToString()) as string);
+                    this.commandControl.Text = Settings.GetValue("PostUpdateCommand", "") as string ?? string.Empty;
+                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("PostUpdateCommandType", ScriptType.Batch.ToString()) as string ?? ScriptType.Batch.ToString());
                     break;
 
                 case 3:
-                    this.commandControl.Text = Settings.GetValue("UpdateFailedCommand", "") as string;
-                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("UpdateFailedCommandType", ScriptType.Batch.ToString()) as string);
+                    this.commandControl.Text = Settings.GetValue("UpdateFailedCommand", "") as string ?? string.Empty;
+                    this.commandControl.CommandType = Command.ConvertToScriptType(Settings.GetValue("UpdateFailedCommandType", ScriptType.Batch.ToString()) as string ?? ScriptType.Batch.ToString());
                     break;
             }
         }
@@ -423,13 +425,16 @@ namespace Ketarin.Forms
 
         #region Hotkeys
 
-        private void lbActions_SelectedIndexChanged(object sender, EventArgs e)
+        private void lbActions_SelectedIndexChanged(object? sender, EventArgs e)
         {
             this.UpdateHotkey();
 
             this.currentSelectedHotkey = this.lbActions.SelectedItem as Hotkey;
 
-            this.txtHotkeyKeys.Text = this.currentSelectedHotkey.Shortcut;
+            if (this.currentSelectedHotkey != null)
+            {
+                this.txtHotkeyKeys.Text = this.currentSelectedHotkey.Shortcut ?? string.Empty;
+            }
         }
 
         private void bDoubleClick_Click(object sender, EventArgs e)

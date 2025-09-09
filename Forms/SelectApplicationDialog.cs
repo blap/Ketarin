@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows.Forms;
 using CDBurnerXP.Forms;
@@ -16,6 +17,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets the selected (checked) applications.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ApplicationJob[] SelectedApplications
         {
             get
@@ -27,7 +29,8 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the applications among which to choose.
         /// </summary>
-        public ApplicationJob[] Applications { get; set; }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public ApplicationJob[]? Applications { get; set; }
 
         #endregion
 
@@ -44,7 +47,7 @@ namespace Ketarin.Forms
             base.OnLoad(e);
 
             olvApplications.Initialize();
-            olvApplications.SetObjects(this.Applications);
+            olvApplications.SetObjects(this.Applications ?? new ApplicationJob[0]);
         }
 
         private void olvApplications_ItemChecked(object sender, ItemCheckedEventArgs e)

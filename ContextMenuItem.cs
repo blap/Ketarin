@@ -25,7 +25,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// User defined object which belongs to the menu item.
         /// </summary>
-        public object Tag { get; set; }
+        public object? Tag { get; set; }
 
         /// <summary>
         /// Gets the list of sub menu items.
@@ -86,7 +86,7 @@ namespace Ketarin.Forms
         /// Gets or sets the function, which is executed when the
         /// item is clicked.
         /// </summary>
-        public ItemSelectHandler EventHandler { get; set; }
+        public ItemSelectHandler? EventHandler { get; set; }
 
         #endregion
 
@@ -116,7 +116,7 @@ namespace Ketarin.Forms
             if (string.IsNullOrEmpty(Text) || Text == "-")
             {
                 // Separator
-                User32.InsertMenu(hmenu, Position, (uint)(User32.MenuFlags.MF_BYPOSITION | User32.MenuFlags.MF_SEPARATOR), new IntPtr(User32.WM_USER + Id), null);
+                User32.InsertMenu(hmenu, Position, (uint)(User32.MenuFlags.MF_BYPOSITION | User32.MenuFlags.MF_SEPARATOR), new IntPtr(User32.WM_USER + Id), string.Empty);
             }
             else
             {

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows.Forms;
 using CDBurnerXP.Controls;
 using wyDay.Controls;
@@ -96,11 +96,11 @@ namespace Ketarin.Forms
             this.lblWebsite = new System.Windows.Forms.Label();
             this.tpSetup = new System.Windows.Forms.TabPage();
             this.bAddInstruction = new wyDay.Controls.SplitButton();
-            this.cmnuAddInstruction = new System.Windows.Forms.ContextMenu();
-            this.mnuStartProcess = new System.Windows.Forms.MenuItem();
-            this.mnuCloseProcess = new System.Windows.Forms.MenuItem();
-            this.mnuCopyFile = new System.Windows.Forms.MenuItem();
-            this.mnuCustomCommand = new System.Windows.Forms.MenuItem();
+            this.cmnuAddInstruction = new System.Windows.Forms.ContextMenuStrip();
+            this.mnuStartProcess = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuCloseProcess = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuCopyFile = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuCustomCommand = new System.Windows.Forms.ToolStripMenuItem();
             this.label1 = new System.Windows.Forms.Label();
             this.instructionsListBox = new CDBurnerXP.Controls.AdvancedListBox();
             this.bSaveAsDefault = new System.Windows.Forms.Button();
@@ -837,14 +837,14 @@ namespace Ketarin.Forms
             this.bAddInstruction.Name = "bAddInstruction";
             this.bAddInstruction.SeparateDropdownButton = false;
             this.bAddInstruction.Size = new System.Drawing.Size(105, 23);
-            this.bAddInstruction.SplitMenu = this.cmnuAddInstruction;
+            this.bAddInstruction.SplitMenuStrip = this.cmnuAddInstruction;
             this.bAddInstruction.TabIndex = 3;
             this.bAddInstruction.Text = "Add instruction";
             this.bAddInstruction.UseVisualStyleBackColor = true;
             // 
             // cmnuAddInstruction
             // 
-            this.cmnuAddInstruction.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.cmnuAddInstruction.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuStartProcess,
             this.mnuCloseProcess,
             this.mnuCopyFile,
@@ -852,25 +852,21 @@ namespace Ketarin.Forms
             // 
             // mnuStartProcess
             // 
-            this.mnuStartProcess.Index = 0;
             this.mnuStartProcess.Text = "&Start process...";
             this.mnuStartProcess.Click += new System.EventHandler(this.mnuStartProcess_Click);
             // 
             // mnuCloseProcess
             // 
-            this.mnuCloseProcess.Index = 1;
             this.mnuCloseProcess.Text = "Cl&ose process...";
             this.mnuCloseProcess.Click += new System.EventHandler(this.mnuCloseProcess_Click);
             // 
             // mnuCopyFile
             // 
-            this.mnuCopyFile.Index = 2;
             this.mnuCopyFile.Text = "&Copy file...";
             this.mnuCopyFile.Click += new System.EventHandler(this.mnuCopyFile_Click);
             // 
             // mnuCustomCommand
             // 
-            this.mnuCustomCommand.Index = 3;
             this.mnuCustomCommand.Text = "C&ustom command...";
             this.mnuCustomCommand.Click += new System.EventHandler(this.mnuCustomCommand_Click);
             // 
@@ -998,10 +994,10 @@ namespace Ketarin.Forms
         private SplitButton bAddInstruction;
         private Label label1;
         private AdvancedListBox instructionsListBox;
-        private ContextMenu cmnuAddInstruction;
-        private MenuItem mnuCopyFile;
-        private MenuItem mnuCustomCommand;
-        private MenuItem mnuStartProcess;
+        private System.Windows.Forms.ContextMenuStrip cmnuAddInstruction;
+        private System.Windows.Forms.ToolStripMenuItem mnuCopyFile;
+        private System.Windows.Forms.ToolStripMenuItem mnuCustomCommand;
+        private System.Windows.Forms.ToolStripMenuItem mnuStartProcess;
         private TableLayoutPanel tableLayoutCommands;
         private Panel pnlCommandBefore;
         private Panel pnlCommandAfter;
@@ -1017,7 +1013,7 @@ namespace Ketarin.Forms
         private Label lblUserAgent;
         private CommandControl txtExecuteBefore;
         private CommandControl txtExecuteAfter;
-        private MenuItem mnuCloseProcess;
+        private System.Windows.Forms.ToolStripMenuItem mnuCloseProcess;
         private CheckBox chkEnabled;
         private Label lblHashVariable;
         private ComboBox cboHashType;

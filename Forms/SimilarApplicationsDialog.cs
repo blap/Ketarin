@@ -1,16 +1,18 @@
-﻿using System;
+using System;
+using System.ComponentModel;
 
 namespace Ketarin.Forms
 {
     public partial class SimilarApplicationsDialog : ApplicationDatabaseBaseDialog
     {
-        private ApplicationJob m_ApplicationJob;
+        private ApplicationJob? m_ApplicationJob;
 
         #region Properties
 
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ApplicationJob ApplicationJob
         {
-            get { return m_ApplicationJob; }
+            get { return m_ApplicationJob!; }
             set { m_ApplicationJob = value; }
         }
 
@@ -26,12 +28,12 @@ namespace Ketarin.Forms
             base.OnLoad(e);
 
             bOK.Enabled = false;
-            txtNewName.Text = m_ApplicationJob.Name;
+            txtNewName.Text = m_ApplicationJob?.Name ?? string.Empty;
         }
 
         private void bOK_Click(object sender, EventArgs e)
         {
-            m_ApplicationJob.Name = txtNewName.Text;
+            if (m_ApplicationJob != null) m_ApplicationJob.Name = txtNewName.Text;
         }
 
         private void txtNewName_TextChanged(object sender, EventArgs e)

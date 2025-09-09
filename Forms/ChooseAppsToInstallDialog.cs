@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -16,7 +17,7 @@ namespace Ketarin.Forms
         private readonly List<ApplicationList> lists = new List<ApplicationList>();
         private readonly Dictionary<ApplicationJob, bool> checkedApps = new Dictionary<ApplicationJob, bool>();
         private readonly List<ApplicationJob> selectedApplications = new List<ApplicationJob>();
-        private ApplicationList lastDeletedList;
+        private ApplicationList? lastDeletedList;
         private bool shouldUpdateApplications;
 
         #region Properties
@@ -46,11 +47,11 @@ namespace Ketarin.Forms
             AcceptButton = bOK;
             CancelButton = bCancel;
 
-            olvLists.ContextMenu = cmnuView;
+            olvLists.ContextMenuStrip = cmnuView;
 
             colListName.ImageGetter = x => this.lists.IndexOf(x as ApplicationList);
-            olvApps.CheckStateGetter = x => this.checkedApps.ContainsKey(x as ApplicationJob) && this.checkedApps[x as ApplicationJob];
-            olvApps.CheckStatePutter = delegate(object x, CheckState value)
+            olvApps.CheckStateGetter = x => this.checkedApps.ContainsKey(x as ApplicationJob) ? (this.checkedApps[x as ApplicationJob] ? CheckState.Checked : CheckState.Unchecked) : CheckState.Unchecked;
+            olvApps.CheckStatePutter = (x, value) =>
             {
                 this.checkedApps[x as ApplicationJob] = (value == CheckState.Checked);
                 return value;
@@ -114,7 +115,7 @@ namespace Ketarin.Forms
             }
 
             // Now add custom lists
-            foreach (ApplicationList list in DbManager.GetSetupLists(allApps.Applications))
+            foreach (ApplicationList list in DbManager.GetSetupLists())
             {
                 AddAppToList(list);
             }
@@ -132,7 +133,7 @@ namespace Ketarin.Forms
 
         private void EnableDisableButtons()
         {
-            ApplicationList currentList = olvLists.SelectedObject as ApplicationList;
+            ApplicationList? currentList = olvLists.SelectedObject as ApplicationList;
             bRemoveApp.Enabled = (currentList != null && !currentList.IsPredefined && olvApps.SelectedObjects.Count > 0);
             bAddApp.Enabled = (currentList != null && !currentList.IsPredefined);
             bSelectApp.Enabled = (currentList != null);
@@ -211,11 +212,15 @@ namespace Ketarin.Forms
             olvLists.AddObject(newList);
             olvLists.SelectedObject = newList;
 
-            OLVListItem selectedItem = olvLists.SelectedItem as OLVListItem;
+            OLVListItem? selectedItem = olvLists.SelectedItem as OLVListItem;
             if (selectedItem != null)
             {
                 selectedItem.EnsureVisible();
-                if (edit) olvLists.EditSubItem(selectedItem, 0);
+                if (edit) 
+                {
+                    // Use the proper method to begin editing
+                    olvLists.StartCellEdit(selectedItem, 0);
+                }
             }
         }
 
@@ -244,14 +249,14 @@ namespace Ketarin.Forms
         private void olvLists_CellEditStarting(object sender, ObjectListView.CellEditEventArgs e)
         {
             // Only allow editing of custom lists
-            ApplicationList selectedList = olvLists.SelectedObject as ApplicationList;
+            ApplicationList? selectedList = olvLists.SelectedObject as ApplicationList;
             if (selectedList != null && selectedList.IsPredefined)
             {
                 e.Cancel = true;
             }
             else
             {
-                System.Windows.Forms.TextBox txt = e.Control as System.Windows.Forms.TextBox;
+                System.Windows.Forms.TextBox? txt = e.Control as System.Windows.Forms.TextBox;
                 if (txt != null)
                 {
                     txt.AutoCompleteMode = AutoCompleteMode.None;
@@ -283,7 +288,7 @@ namespace Ketarin.Forms
 
         private void olvLists_CellEditFinished(object sender, ObjectListView.CellEditEventArgs e)
         {
-            ApplicationList list = e.RowObject as ApplicationList;
+            ApplicationList? list = e.RowObject as ApplicationList;
             if (list != null)
             {
                 list.Save();
@@ -319,14 +324,17 @@ namespace Ketarin.Forms
                 dialog.Applications = this.lists[0].Applications.ToArray();
                 if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    ApplicationList list = olvLists.SelectedObject as ApplicationList;
-                    foreach (ApplicationJob app in dialog.SelectedApplications)
+                    ApplicationList? list = olvLists.SelectedObject as ApplicationList;
+                    if (list != null)
                     {
-                        list.Applications.Add(app);
+                        foreach (ApplicationJob app in dialog.SelectedApplications)
+                        {
+                            list.Applications.Add(app);
+                        }
+                        list.Save();
+                        UpdateAppList(list);
+                        olvApps.SetObjects(list.Applications);
                     }
-                    list.Save();
-                    UpdateAppList(list);
-                    olvApps.SetObjects(list.Applications);
                 }
             }
         }
@@ -351,23 +359,31 @@ namespace Ketarin.Forms
 
         private void olvApps_ItemDrag(object sender, ItemDragEventArgs e)
         {
-            DoDragDrop(((OLVListItem)e.Item).RowObject, DragDropEffects.Copy);
+            OLVListItem? item = e.Item as OLVListItem;
+            if (item?.RowObject != null)
+            {
+                DoDragDrop(item.RowObject, DragDropEffects.Copy);
+            }
         }
 
         private void olvLists_DragDrop(object sender, DragEventArgs e)
         {
-            ApplicationJob job = e.Data.GetData(typeof(ApplicationJob).FullName) as ApplicationJob;
+            object? data = e.Data?.GetData(typeof(ApplicationJob).FullName);
+            ApplicationJob? job = data as ApplicationJob;
             if (job != null)
             {
                 OLVColumn column;
                 Point actualPoint = olvLists.PointToClient(new Point(e.X, e.Y));
-                OLVListItem targetItem = olvLists.GetItemAt(actualPoint.X, actualPoint.Y, out column);
+                OLVListItem? targetItem = olvLists.GetItemAt(actualPoint.X, actualPoint.Y, out column);
                 if (targetItem != null)
                 {
-                    ApplicationList list = targetItem.RowObject as ApplicationList;
-                    list.Applications.Add(job);
-                    list.Save();
-                    UpdateAppList(list);
+                    ApplicationList? list = targetItem.RowObject as ApplicationList;
+                    if (list != null)
+                    {
+                        list.Applications.Add(job);
+                        list.Save();
+                        UpdateAppList(list);
+                    }
                 }
             }
         }
@@ -384,21 +400,32 @@ namespace Ketarin.Forms
 
         private void CheckDropOnList(DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(typeof(ApplicationJob).FullName))
+            if (e.Data?.GetDataPresent(typeof(ApplicationJob).FullName) == true)
             {
                 // Check if custom list is hovered
                 OLVColumn column;
                 Point actualPoint = olvLists.PointToClient(new Point(e.X, e.Y));
-                OLVListItem targetItem = olvLists.GetItemAt(actualPoint.X, actualPoint.Y, out column);
+                OLVListItem? targetItem = olvLists.GetItemAt(actualPoint.X, actualPoint.Y, out column);
                 if (targetItem != null)
                 {
-                    ApplicationList list = targetItem.RowObject as ApplicationList;
-                    e.Effect = list.IsPredefined ? DragDropEffects.None : DragDropEffects.Copy;
+                    ApplicationList? list = targetItem.RowObject as ApplicationList;
+                    if (list != null)
+                    {
+                        e.Effect = list.IsPredefined ? DragDropEffects.None : DragDropEffects.Copy;
+                    }
+                    else
+                    {
+                        e.Effect = DragDropEffects.None;
+                    }
                 }
                 else
                 {
                     e.Effect = DragDropEffects.None;
                 }
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
             }
         }
 
@@ -417,7 +444,7 @@ namespace Ketarin.Forms
 
         private void bRemoveApp_Click(object sender, EventArgs e)
         {
-            ApplicationList currentList = olvLists.SelectedObject as ApplicationList;
+            ApplicationList? currentList = olvLists.SelectedObject as ApplicationList;
             if (currentList != null)
             {
                 foreach (ApplicationJob app in olvApps.SelectedObjects)
@@ -446,18 +473,34 @@ namespace Ketarin.Forms
 
         private void mnuSelectAll_Click(object sender, EventArgs e)
         {
-            olvApps.CheckedObjects = olvApps.Objects;
+            // Convert Objects to ArrayList for CheckedObjects
+            ArrayList allObjects = new ArrayList();
+            if (olvApps.Objects != null)
+            {
+                foreach (object obj in olvApps.Objects)
+                {
+                    allObjects.Add(obj);
+                }
+            }
+            olvApps.CheckedObjects = allObjects;
         }
 
         private void mnuSelectNone_Click(object sender, EventArgs e)
         {
-            olvApps.CheckedObjects = null;
+            olvApps.CheckedObjects = new ArrayList();
         }
 
         private void mnuInvertSelection_Click(object sender, EventArgs e)
         {
-            List<object> allObjects = new List<object>();
-            allObjects.AddRange(olvApps.Objects.ToArray());
+            ArrayList allObjects = new ArrayList();
+            // Convert IEnumerable to array properly
+            if (olvApps.Objects != null)
+            {
+                foreach (object obj in olvApps.Objects)
+                {
+                    allObjects.Add(obj);
+                }
+            }
             foreach (object o in olvApps.CheckedObjects)
             {
                 allObjects.Remove(o);
@@ -468,9 +511,13 @@ namespace Ketarin.Forms
         private void mnuSaveAsNewList_Click(object sender, EventArgs e)
         {
             ApplicationList newList = new ApplicationList("New list", false);
-            foreach (ApplicationJob app in olvApps.CheckedObjects)
+            foreach (object? obj in olvApps.CheckedObjects)
             {
-                newList.Applications.Add(app);
+                ApplicationJob? app = obj as ApplicationJob;
+                if (app != null)
+                {
+                    newList.Applications.Add(app);
+                }
             }
             CreateNewAppList(newList, true);
         }

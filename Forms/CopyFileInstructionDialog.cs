@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.IO;
 using System.Windows.Forms;
@@ -7,18 +7,18 @@ namespace Ketarin.Forms
 {
     public partial class CopyFileInstructionDialog : InstructionBaseDialog
     {
-        private CopyFileInstruction instruction;
+        private CopyFileInstruction? instruction;
 
-        public override SetupInstruction SetupInstruction
+        public override SetupInstruction? SetupInstruction
         {
             set
             {
-                CopyFileInstruction instruction = value as CopyFileInstruction;
+                CopyFileInstruction? instruction = value as CopyFileInstruction;
                 if (instruction != null)
                 {
                     this.instruction = instruction;
-                    txtSource.Text = this.instruction.Source;
-                    txtTarget.Text = this.instruction.Target;
+                    txtSource.Text = this.instruction.Source ?? string.Empty;
+                    txtTarget.Text = this.instruction.Target ?? string.Empty;
                 }
             }
             get
@@ -46,9 +46,9 @@ namespace Ketarin.Forms
                 {
                     if (Directory.Exists(var.Value as string))
                     {
-                        MenuItem newItem = new MenuItem(var.Key as string);
+                        ToolStripMenuItem newItem = new ToolStripMenuItem(var.Key as string);
                         newItem.Click += this.EnvironmentVariableClick;
-                        environmentMenu.MenuItems.Add(newItem);
+                        environmentMenu.Items.Add(newItem);
                     }
                 }
                 catch
@@ -58,9 +58,12 @@ namespace Ketarin.Forms
             }
         }
 
-        private void EnvironmentVariableClick(object sender, EventArgs e)
+        private void EnvironmentVariableClick(object? sender, EventArgs e)
         {
-            txtTarget.AppendText("%" + ((MenuItem)sender).Text + "%");
+            if (sender is ToolStripMenuItem menuItem)
+            {
+                txtTarget.AppendText("%" + menuItem.Text + "%");
+            }
         }
 
         private void bOK_Click(object sender, EventArgs e)

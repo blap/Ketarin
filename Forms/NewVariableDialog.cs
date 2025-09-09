@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace Ketarin.Forms
@@ -15,6 +16,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the variable name.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string VariableName
         {
             get

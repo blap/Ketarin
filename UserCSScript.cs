@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.CodeDom.Compiler;
 using System.Reflection;
 using System.Windows.Forms;
@@ -8,7 +8,7 @@ namespace Ketarin
 {
     public interface ICustomSetupScript
     {
-        void Execute(IWin32Window owner, ApplicationJob app);
+        void Execute(IWin32Window? owner, ApplicationJob? app);
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ namespace Ketarin
         {
             public class CustomScript : Ketarin.ICustomSetupScript
             {
-                public void Execute(IWin32Window owner, ApplicationJob app)
+                public void Execute(IWin32Window? owner, ApplicationJob? app)
                 {
                 {0}
                 }
@@ -84,7 +84,7 @@ namespace Ketarin
         /// Compiles the user code into an assembly.
         /// </summary>
         /// <param name="errors">Compiler errors if any</param>
-        public Assembly Compile(out CompilerErrorCollection errors)
+        public Assembly? Compile(out CompilerErrorCollection errors)
         {
             // Create a code provider
             // This class implements the 'CodeDomProvider' class as its base. All of the current .Net languages (at least Microsoft ones)
@@ -121,10 +121,10 @@ namespace Ketarin
             return errors.HasErrors ? null : result.CompiledAssembly;
         }
 
-        public void Execute(ApplicationJob argument)
+        public void Execute(ApplicationJob? argument)
         {
             CompilerErrorCollection errors;
-            Assembly assembly = Compile(out errors);
+            Assembly? assembly = Compile(out errors);
 
             if (errors.HasErrors)
             {
@@ -132,27 +132,30 @@ namespace Ketarin
             }
 
             // Now that we have a compiled script, lets run them
-            foreach (Type type in assembly.GetExportedTypes())
+            if (assembly != null)
             {
-                foreach (Type iface in type.GetInterfaces())
+                foreach (Type type in assembly.GetExportedTypes())
                 {
-                    if (iface != typeof(ICustomSetupScript)) continue;
-
-                    // yay, we found a script interface, lets create it and run it!
-
-                    // Get the constructor for the current type
-                    // you can also specify what creation parameter types you want to pass to it,
-                    // so you could possibly pass in data it might need, or a class that it can use to query the host application
-                    ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
-                    if (constructor != null && constructor.IsPublic)
+                    foreach (Type iface in type.GetInterfaces())
                     {
-                        // lets be friendly and only do things legitimitely by only using valid constructors
+                        if (iface != typeof(ICustomSetupScript)) continue;
 
-                        // we specified that we wanted a constructor that doesn't take parameters, so don't pass parameters
-                        ICustomSetupScript scriptObject = constructor.Invoke(null) as ICustomSetupScript;
-                        if (scriptObject != null)
+                        // yay, we found a script interface, lets create it and run it!
+
+                        // Get the constructor for the current type
+                        // you can also specify what creation parameter types you want to pass to it,
+                        // so you could possibly pass in data it might need, or a class that it can use to query the host application
+                        ConstructorInfo? constructor = type.GetConstructor(Type.EmptyTypes);
+                        if (constructor != null && constructor.IsPublic)
                         {
-                            scriptObject.Execute(null, argument);
+                            // lets be friendly and only do things legitimitely by only using valid constructors
+
+                            // we specified that we wanted a constructor that doesn't take parameters, so don't pass parameters
+                            ICustomSetupScript? scriptObject = constructor.Invoke(null) as ICustomSetupScript;
+                            if (scriptObject != null)
+                            {
+                                scriptObject.Execute(null, argument);
+                            }
                         }
                     }
                 }

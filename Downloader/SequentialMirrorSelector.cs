@@ -1,13 +1,8 @@
-// <copyright>
-// The Code Project Open License (CPOL) 1.02
-// </copyright>
-// <author>Guilherme Labigalini</author>
-
 namespace MyDownloader.Core
 {
     public class SequentialMirrorSelector: IMirrorSelector
     {
-        private Downloader downloader;
+        private Downloader? downloader;
         private int queryMirrorCount;
 
         #region IMirrorSelector Members
@@ -20,9 +15,9 @@ namespace MyDownloader.Core
 
         public ResourceLocation GetNextResourceLocation()
         {
-            if (downloader.Mirrors == null || downloader.Mirrors.Count == 0)
+            if (downloader?.Mirrors == null || downloader.Mirrors.Count == 0)
             {
-                return this.downloader.ResourceLocation;
+                return this.downloader!.ResourceLocation;
             }
 
             lock (downloader.Mirrors)

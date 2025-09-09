@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace Ketarin.Forms
@@ -38,15 +38,15 @@ namespace Ketarin.Forms
             this.lblUrl = new System.Windows.Forms.Label();
             this.txtUrl = new Ketarin.Forms.VariableTextBox();
             this.rtfContent = new System.Windows.Forms.RichTextBox();
-            this.cmuRtf = new System.Windows.Forms.ContextMenu();
-            this.cmnuCopy = new System.Windows.Forms.MenuItem();
-            this.cmnuPaste = new System.Windows.Forms.MenuItem();
-            this.cmnuCopyMatch = new System.Windows.Forms.MenuItem();
-            this.cmnuGoToMatch = new System.Windows.Forms.MenuItem();
-            this.sepPreview = new System.Windows.Forms.MenuItem();
-            this.cmnuBrowser = new System.Windows.Forms.MenuItem();
-            this.sepWrap = new System.Windows.Forms.MenuItem();
-            this.cmnuWrap = new System.Windows.Forms.MenuItem();
+            this.cmuRtf = new System.Windows.Forms.ContextMenuStrip();
+            this.cmnuCopy = new System.Windows.Forms.ToolStripMenuItem();
+            this.cmnuPaste = new System.Windows.Forms.ToolStripMenuItem();
+            this.cmnuCopyMatch = new System.Windows.Forms.ToolStripMenuItem();
+            this.cmnuGoToMatch = new System.Windows.Forms.ToolStripMenuItem();
+            this.sepPreview = new System.Windows.Forms.ToolStripSeparator();
+            this.cmnuBrowser = new System.Windows.Forms.ToolStripMenuItem();
+            this.sepWrap = new System.Windows.Forms.ToolStripSeparator();
+            this.cmnuWrap = new System.Windows.Forms.ToolStripMenuItem();
             this.bLoad = new System.Windows.Forms.Button();
             this.bUseAsStart = new System.Windows.Forms.Button();
             this.bUseAsEnd = new System.Windows.Forms.Button();
@@ -147,7 +147,7 @@ namespace Ketarin.Forms
             | System.Windows.Forms.AnchorStyles.Right)));
             this.rtfContent.BackColor = System.Drawing.SystemColors.Window;
             this.rtfContent.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.rtfContent.ContextMenu = this.cmuRtf;
+            this.rtfContent.ContextMenuStrip = this.cmuRtf;
             this.rtfContent.DetectUrls = false;
             this.rtfContent.Enabled = false;
             this.rtfContent.Font = new System.Drawing.Font("Courier New", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -164,7 +164,7 @@ namespace Ketarin.Forms
             // 
             // cmuRtf
             // 
-            this.cmuRtf.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.cmuRtf.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.cmnuCopy,
             this.cmnuPaste,
             this.cmnuCopyMatch,
@@ -177,53 +177,59 @@ namespace Ketarin.Forms
             // cmnuCopy
             // 
             this.cmnuCopy.Enabled = false;
-            this.cmnuCopy.Index = 0;
-            this.cmnuCopy.Shortcut = System.Windows.Forms.Shortcut.CtrlP;
+            this.cmnuCopy.Name = "cmnuCopy";
+            this.cmnuCopy.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C)));
+            this.cmnuCopy.Size = new System.Drawing.Size(186, 22);
             this.cmnuCopy.Text = "&Copy";
             this.cmnuCopy.Click += new System.EventHandler(this.cmnuCopy_Click);
             // 
             // cmnuPaste
             // 
-            this.cmnuPaste.Index = 1;
-            this.cmnuPaste.Shortcut = System.Windows.Forms.Shortcut.CtrlV;
+            this.cmnuPaste.Name = "cmnuPaste";
+            this.cmnuPaste.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V)));
+            this.cmnuPaste.Size = new System.Drawing.Size(186, 22);
             this.cmnuPaste.Text = "&Paste";
             this.cmnuPaste.Click += new System.EventHandler(this.cmnuPaste_Click);
             // 
             // cmnuCopyMatch
             // 
             this.cmnuCopyMatch.Enabled = false;
-            this.cmnuCopyMatch.Index = 2;
-            this.cmnuCopyMatch.Shortcut = System.Windows.Forms.Shortcut.CtrlM;
+            this.cmnuCopyMatch.Name = "cmnuCopyMatch";
+            this.cmnuCopyMatch.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.M)));
+            this.cmnuCopyMatch.Size = new System.Drawing.Size(186, 22);
             this.cmnuCopyMatch.Text = "Copy &match";
             this.cmnuCopyMatch.Click += new System.EventHandler(this.cmnuCopyMatch_Click);
             // 
             // cmnuGoToMatch
             // 
-            this.cmnuGoToMatch.Index = 3;
-            this.cmnuGoToMatch.Shortcut = System.Windows.Forms.Shortcut.CtrlG;
+            this.cmnuGoToMatch.Name = "cmnuGoToMatch";
+            this.cmnuGoToMatch.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.G)));
+            this.cmnuGoToMatch.Size = new System.Drawing.Size(186, 22);
             this.cmnuGoToMatch.Text = "&Go to match";
             this.cmnuGoToMatch.Click += new System.EventHandler(this.cmnuGoToMatch_Click);
             // 
             // sepPreview
             // 
-            this.sepPreview.Index = 4;
-            this.sepPreview.Text = "-";
+            this.sepPreview.Name = "sepPreview";
+            this.sepPreview.Size = new System.Drawing.Size(183, 6);
             // 
             // cmnuBrowser
             // 
-            this.cmnuBrowser.Index = 5;
+            this.cmnuBrowser.Name = "cmnuBrowser";
+            this.cmnuBrowser.Size = new System.Drawing.Size(186, 22);
             this.cmnuBrowser.Text = "&Show in webbrowser";
             this.cmnuBrowser.Click += new System.EventHandler(this.cmnuBrowser_Click);
             // 
             // sepWrap
             // 
-            this.sepWrap.Index = 6;
-            this.sepWrap.Text = "-";
+            this.sepWrap.Name = "sepWrap";
+            this.sepWrap.Size = new System.Drawing.Size(183, 6);
             // 
             // cmnuWrap
             // 
-            this.cmnuWrap.Index = 7;
-            this.cmnuWrap.Shortcut = System.Windows.Forms.Shortcut.CtrlB;
+            this.cmnuWrap.Name = "cmnuWrap";
+            this.cmnuWrap.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.B)));
+            this.cmnuWrap.Size = new System.Drawing.Size(186, 22);
             this.cmnuWrap.Text = "&Wrap lines";
             this.cmnuWrap.Click += new System.EventHandler(this.cmnuWrap_Click);
             // 
@@ -525,17 +531,17 @@ namespace Ketarin.Forms
         private RadioButton rbContentUrlStartEnd;
         private RadioButton rbContentUrlRegex;
         private RadioButton rbContentText;
-        private ContextMenu cmuRtf;
-        private MenuItem cmnuCopy;
-        private MenuItem cmnuCopyMatch;
-        private MenuItem cmnuGoToMatch;
+        private System.Windows.Forms.ContextMenuStrip cmuRtf;
+        private System.Windows.Forms.ToolStripMenuItem cmnuCopy;
+        private System.Windows.Forms.ToolStripMenuItem cmnuCopyMatch;
+        private System.Windows.Forms.ToolStripMenuItem cmnuGoToMatch;
         private CheckBox chkRightToLeft;
         private Button bPostData;
-        private MenuItem sepPreview;
-        private MenuItem cmnuBrowser;
-        private MenuItem cmnuPaste;
-        private MenuItem sepWrap;
-        private MenuItem cmnuWrap;
+        private System.Windows.Forms.ToolStripSeparator sepPreview;
+        private System.Windows.Forms.ToolStripMenuItem cmnuBrowser;
+        private System.Windows.Forms.ToolStripMenuItem cmnuPaste;
+        private System.Windows.Forms.ToolStripSeparator sepWrap;
+        private System.Windows.Forms.ToolStripMenuItem cmnuWrap;
         private LinkLabel lnkHowTo;
         private SplitContainer splitContainer;
         private Panel pnlVariables;

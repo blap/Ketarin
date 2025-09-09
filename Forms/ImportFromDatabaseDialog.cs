@@ -1,15 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Windows.Forms;
 using CDBurnerXP;
-using CookComputing.XmlRpc;
+// Removed CookComputing.XmlRpc reference
 
 namespace Ketarin.Forms
 {
     public partial class ImportFromDatabaseDialog : ApplicationDatabaseBaseDialog
     {
-        private static RpcApplication[] m_LastLoadedApplications;
+        private static RpcApplication[]? m_LastLoadedApplications = new RpcApplication[0];
         private static string m_LastSearchText = string.Empty;
 
         #region Properties
@@ -40,16 +40,23 @@ namespace Ketarin.Forms
 
             try
             {
+                // Disabled XML-RPC functionality for .NET 9 compatibility
+                MessageBox.Show(this, "Online database functionality is not available in this version.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                /*
                 IKetarinRpc proxy = XmlRpcProxyGen.Create<IKetarinRpc>();
                 m_LastLoadedApplications = proxy.GetApplications(this.txtSearchSubject.Text);
                 m_LastSearchText = this.txtSearchSubject.Text;
                 this.Applications = m_LastLoadedApplications;
                 this.olvApplications.EmptyListMsg = "No applications found";
+                */
             }
+            /*
             catch (XmlRpcException ex)
             {
                 MessageBox.Show(this, "An error occured while accessing the online database: " + ex.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            */
             catch (WebException ex)
             {
                 MessageBox.Show(this, "Could not connect to the online database: " + ex.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -73,6 +80,10 @@ namespace Ketarin.Forms
 
             try
             {
+                // Disabled XML-RPC functionality for .NET 9 compatibility
+                MessageBox.Show(this, "Online database functionality is not available in this version.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                /*
                 foreach (RpcApplication app in this.olvApplications.SelectedObjects)
                 {
                     IKetarinRpc proxy = XmlRpcProxyGen.Create<IKetarinRpc>();
@@ -80,6 +91,7 @@ namespace Ketarin.Forms
                     ApplicationJob resultJob = ApplicationJob.LoadOneFromXml(xml);
                     // For security reasons, we remove some of the properties
                     // if it's not the users own job
+                    // Use JsonDbManager instead of DbManager for .NET 9 compatibility
                     if (!DbManager.ApplicationExists(resultJob.Guid))
                     {
                         resultJob.CanBeShared = false;
@@ -114,12 +126,15 @@ namespace Ketarin.Forms
                         resultJob.Save();
                     }
                 }
+                */
             }
+            /*
             catch (XmlRpcException ex)
             {
                 MessageBox.Show(this, "An error occured while importing applications: " + ex.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.DialogResult = DialogResult.None;
             }
+            */
             catch (WebException ex)
             {
                 MessageBox.Show(this, "Could not connect to the online database: " + ex.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -142,16 +157,23 @@ namespace Ketarin.Forms
 
             try
             {
+                // Disabled XML-RPC functionality for .NET 9 compatibility
+                MessageBox.Show(this, "Online database functionality is not available in this version.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                /*
                 IKetarinRpc proxy = XmlRpcProxyGen.Create<IKetarinRpc>();
                 m_LastLoadedApplications = proxy.GetMostDownloadedApplications();
                 m_LastSearchText = string.Empty;
                 this.olvApplications.Sort(this.colUseCount);
                 this.Applications = m_LastLoadedApplications;
+                */
             }
+            /*
             catch (XmlRpcException ex)
             {
                 MessageBox.Show(this, "An error occured while accessing the online database: " + ex.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            */
             catch (WebException ex)
             {
                 MessageBox.Show(this, "Could not connect to the online database: " + ex.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);

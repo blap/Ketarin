@@ -22,20 +22,21 @@ namespace MyDownloader.Core
         private int requestedSegmentCount;
         private ResourceLocation resourceLocation;
         private List<ResourceLocation> mirrors;
-        private List<Segment> segments;
-        private Thread mainThread;
+        private List<Segment>? segments;
+        private Thread? mainThread;
         private List<Thread> threads;
-        private RemoteFileInfo remoteFileInfo;
+        private RemoteFileInfo? remoteFileInfo;
         private DownloaderState state;
         private DateTime createdDateTime;
-        private Exception lastError;
+        private Exception? lastError;
         private Dictionary<string, object> extentedProperties = new Dictionary<string, object>();
         
         private IProtocolProvider defaultDownloadProvider;
         private ISegmentCalculator segmentCalculator;
-        private IMirrorSelector mirrorSelector;
+        private IMirrorSelector? mirrorSelector;
 
-        private string statusMessage;
+        private string statusMessage = string.Empty;
+        private CancellationTokenSource? cancellationTokenSource = null;
 
         private Downloader(
             ResourceLocation rl,
@@ -103,21 +104,21 @@ namespace MyDownloader.Core
 
         #region Properties
 
-        public event EventHandler Ending;
+        public event EventHandler? Ending;
 
-        public event EventHandler InfoReceived;
+        public event EventHandler? InfoReceived;
 
-        public event EventHandler StateChanged;
+        public event EventHandler? StateChanged;
 
-        public event EventHandler<SegmentEventArgs> RestartingSegment;
+        public event EventHandler<SegmentEventArgs>? RestartingSegment;
 
-        public event EventHandler<SegmentEventArgs> SegmentStoped;
+        public event EventHandler<SegmentEventArgs>? SegmentStoped;
 
-        public event EventHandler<SegmentEventArgs> SegmentStarting;
+        public event EventHandler<SegmentEventArgs>? SegmentStarting;
 
-        public event EventHandler<SegmentEventArgs> SegmentStarted;
+        public event EventHandler<SegmentEventArgs>? SegmentStarted;
 
-        public event EventHandler<SegmentEventArgs> SegmentFailed;
+        public event EventHandler<SegmentEventArgs>? SegmentFailed;
 
         public Dictionary<string, object> ExtendedProperties
         {
@@ -180,6 +181,8 @@ namespace MyDownloader.Core
         {
             get
             {
+                if (segments == null) return 0;
+                
                 int count = segments.Count;
 
                 if (count > 0)
@@ -188,7 +191,11 @@ namespace MyDownloader.Core
 
                     for (int i = 0; i < count; i++)
                     {
-                        progress += segments[i].Progress;
+                        Segment? segment = segments[i];
+                        if (segment != null)
+                        {
+                            progress += segment.Progress;
+                        }
                     }
 
                     return progress / count;
@@ -204,11 +211,17 @@ namespace MyDownloader.Core
         {
             get
             {
+                if (segments == null) return 0;
+                
                 double rate = 0;
 
                 for (int i = 0; i < segments.Count; i++)
                 {
-                    rate += segments[i].Rate;
+                    Segment? segment = segments[i];
+                    if (segment != null)
+                    {
+                        rate += segment.Rate;
+                    }
                 }
 
                 return rate;
@@ -219,11 +232,17 @@ namespace MyDownloader.Core
         {
             get
             {
+                if (segments == null) return 0;
+                
                 long transfered = 0;
 
                 for (int i = 0; i < segments.Count; i++)
                 {
-                    transfered += segments[i].Transfered;
+                    Segment? segment = segments[i];
+                    if (segment != null)
+                    {
+                        transfered += segment.Transfered;
+                    }
                 }
 
                 return transfered;
@@ -234,6 +253,8 @@ namespace MyDownloader.Core
         {
             get
             {
+                if (segments == null) return TimeSpan.MaxValue;
+                
                 if (this.Rate == 0)
                 {
                     return TimeSpan.MaxValue;
@@ -243,14 +264,18 @@ namespace MyDownloader.Core
 
                 for (int i = 0; i < segments.Count; i++)
                 {
-                    missingTransfer += segments[i].MissingTransfer;
+                    Segment? segment = segments[i];
+                    if (segment != null)
+                    {
+                        missingTransfer += segment.MissingTransfer;
+                    }
                 }
 
                 return TimeSpan.FromSeconds(missingTransfer / this.Rate);
             }
         } 
 
-        public List<Segment> Segments
+        public List<Segment>? Segments
         {
             get
             {
@@ -328,13 +353,15 @@ namespace MyDownloader.Core
 
         private void StartToPrepare()
         {
-            mainThread = new Thread(new ParameterizedThreadStart(StartDownloadThreadProc));
+            cancellationTokenSource = new CancellationTokenSource();
+            mainThread = new Thread(new ParameterizedThreadStart(StartDownloadThreadProc!));
             mainThread.Start(requestedSegmentCount);
         }
 
         private void StartPrepared()
         {
-            mainThread = new Thread(new ThreadStart(RestartDownload));
+            cancellationTokenSource = new CancellationTokenSource();
+            mainThread = new Thread(new ThreadStart(RestartDownload!));
             mainThread.Start();
         }
 
@@ -431,7 +458,11 @@ namespace MyDownloader.Core
             {
                 Segments.Clear();
 
-                mainThread.Abort();
+                // Use cancellation token instead of Thread.Abort
+                cancellationTokenSource?.Cancel();
+                
+                // Wait for main thread to finish instead of aborting
+                mainThread?.Join(TimeSpan.FromSeconds(5));
                 mainThread = null;
                 SetState(DownloaderState.NeedToPrepare);
                 return;
@@ -441,6 +472,9 @@ namespace MyDownloader.Core
             {
                 SetState(DownloaderState.Pausing);
 
+                // Use cancellation token instead of Thread.Abort
+                cancellationTokenSource?.Cancel();
+
                 while (!AllWorkersStopped(5))
                     ;
 
@@ -449,7 +483,8 @@ namespace MyDownloader.Core
                     threads.Clear();
                 }
 
-                mainThread.Abort();
+                // Wait for main thread to finish instead of aborting
+                mainThread?.Join(TimeSpan.FromSeconds(5));
                 mainThread = null;
 
                 if (RemoteFileInfo != null && !RemoteFileInfo.AcceptRanges)
@@ -500,8 +535,8 @@ namespace MyDownloader.Core
         {
             SetState(DownloaderState.Preparing);
 
-            int segmentCount = Math.Min((int)objSegmentCount, Settings.MaxSegments);
-            Stream inputStream = null;
+            int segmentCount = Math.Min((int)objSegmentCount, Ketarin.Downloader.Settings.MaxSegments);
+            Stream? inputStream = null;
             int currentTry = 0;
 
             do
@@ -527,13 +562,17 @@ namespace MyDownloader.Core
                     SetState(DownloaderState.NeedToPrepare);
                     return;
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    if (currentTry < Settings.MaxRetries)
+                    if (currentTry < Ketarin.Downloader.Settings.MaxRetries)
                     {
                         SetState(DownloaderState.WaitingForReconnect);
-                        Thread.Sleep(TimeSpan.FromSeconds(Settings.RetryDelay));
+                        Thread.Sleep(TimeSpan.FromSeconds(Ketarin.Downloader.Settings.RetryDelay));
                     }
                     else
                     {
@@ -625,10 +664,10 @@ namespace MyDownloader.Core
                     catch (Exception ex)
                     {
                         lastError = ex;
-                        if (currentTry < Settings.MaxRetries)
+                        if (currentTry < Ketarin.Downloader.Settings.MaxRetries)
                         {
                             SetState(DownloaderState.WaitingForReconnect);
-                            Thread.Sleep(TimeSpan.FromSeconds(Settings.RetryDelay));
+                            Thread.Sleep(TimeSpan.FromSeconds(Ketarin.Downloader.Settings.RetryDelay));
                         }
                         else
                         {
@@ -678,8 +717,8 @@ namespace MyDownloader.Core
         {
             SetState(DownloaderState.Working);
 
-            // TODO comparar o remote file Info se esta igual, se o download saiu de paused/prepared
-            // e nao veio da thread que le o fileinfo
+            // Compare remote file info to check if it's the same, in case the download 
+            // was paused/prepared and didn't come from the thread that reads the file info
 
             using (FileStream fs = new FileStream(this.LocalFile, FileMode.Open, FileAccess.Write))
             {
@@ -728,13 +767,13 @@ namespace MyDownloader.Core
             {
                 if (Segments[i].State == SegmentState.Error &&
                     Segments[i].LastErrorDateTime != DateTime.MinValue &&
-                    (Settings.MaxRetries == 0 ||
-                    Segments[i].CurrentTry < Settings.MaxRetries))
+                    (Ketarin.Downloader.Settings.MaxRetries == 0 ||
+                    Segments[i].CurrentTry < Ketarin.Downloader.Settings.MaxRetries))
                 {
                     hasErrors = true;
                     TimeSpan ts =  DateTime.Now - Segments[i].LastErrorDateTime;
 
-                    if (ts.TotalSeconds >= Settings.RetryDelay)
+                    if (ts.TotalSeconds >= Ketarin.Downloader.Settings.RetryDelay)
                     {
                         Segments[i].CurrentTry++;
                         StartSegment(Segments[i]);
@@ -742,7 +781,7 @@ namespace MyDownloader.Core
                     }
                     else
                     {
-                        delay = Math.Max(delay, Settings.RetryDelay * 1000 - ts.TotalMilliseconds);
+                        delay = Math.Max(delay, Ketarin.Downloader.Settings.RetryDelay * 1000 - ts.TotalMilliseconds);
                     }
                 }
             }
@@ -799,6 +838,9 @@ namespace MyDownloader.Core
 
             try
             {
+                // Check for cancellation
+                cancellationTokenSource?.Token.ThrowIfCancellationRequested();
+
                 if (segment.EndPosition > 0 && segment.StartPosition >= segment.EndPosition)
                 {
                     segment.State = SegmentState.Finished;
@@ -819,6 +861,9 @@ namespace MyDownloader.Core
 
                 if (segment.InputStream == null)
                 {                    
+                    // Check for cancellation
+                    cancellationTokenSource?.Token.ThrowIfCancellationRequested();
+
                     // get the next URL (It can the the main url or some mirror)
                     ResourceLocation location = this.MirrorSelector.GetNextResourceLocation();
                     // get the protocol provider for that mirror
@@ -877,6 +922,9 @@ namespace MyDownloader.Core
 
                     do
                     {
+                        // Check for cancellation
+                        cancellationTokenSource?.Token.ThrowIfCancellationRequested();
+
                         // reads the buffer from input stream
                         readSize = segment.InputStream.Read(buffer, 0, buffSize);
 
@@ -935,6 +983,11 @@ namespace MyDownloader.Core
                 // raise the event
                 OnSegmentStoped(segment);
             }
+            catch (OperationCanceledException)
+            {
+                // Handle cancellation gracefully
+                segment.State = SegmentState.Paused;
+            }
             catch (Exception ex)
             {
                 // store the error information
@@ -961,8 +1014,8 @@ namespace MyDownloader.Core
                 {
                     Segment oldSegment = this.segments[i];
                     if (oldSegment.State == SegmentState.Downloading &&
-                        oldSegment.Left.TotalSeconds > Settings.MinSegmentLeftToStartNewSegment &&
-                        oldSegment.MissingTransfer / 2 >= Settings.MinSegmentSize)
+                        oldSegment.Left.TotalSeconds > Ketarin.Downloader.Settings.MinSegmentLeftToStartNewSegment &&
+                        oldSegment.MissingTransfer / 2 >= Ketarin.Downloader.Settings.MinSegmentSize)
                     {
                         // get the half of missing size of oldSegment
                         long newSize = oldSegment.MissingTransfer / 2;

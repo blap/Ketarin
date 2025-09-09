@@ -7,8 +7,8 @@ namespace CDBurnerXP.Controls
     public class PanelCollection : ICollection<ListBoxPanel>, IList<ListBoxPanel>, System.Collections.IList
     {
         private List<ListBoxPanel> m_Panels = new List<ListBoxPanel>();
-        public event EventHandler PanelAdded;
-        public event EventHandler PanelRemoved;
+        public event EventHandler? PanelAdded;
+        public event EventHandler? PanelRemoved;
 
         #region ICollection<ListBoxPanel> Members
 
@@ -18,7 +18,7 @@ namespace CDBurnerXP.Controls
 
             if (PanelAdded != null)
             {
-                PanelAdded(item, null);
+                PanelAdded(item, EventArgs.Empty);
             }
         }
 
@@ -30,7 +30,7 @@ namespace CDBurnerXP.Controls
             {
                 if (PanelRemoved != null)
                 {
-                    PanelRemoved(panel, null);
+                    PanelRemoved(panel, EventArgs.Empty);
                 }
             }
         }
@@ -65,7 +65,7 @@ namespace CDBurnerXP.Controls
             bool res = m_Panels.Remove(item);
             if (PanelRemoved != null)
             {
-                PanelRemoved(item, null);
+                PanelRemoved(item, EventArgs.Empty);
             }
             return res;
         }
@@ -102,7 +102,7 @@ namespace CDBurnerXP.Controls
             m_Panels.Insert(index, item);
             if (PanelAdded != null)
             {
-                PanelAdded(item, null);
+                PanelAdded(item, EventArgs.Empty);
             }
         }
 
@@ -127,41 +127,43 @@ namespace CDBurnerXP.Controls
 
         #region IList Members
 
-        public int Add(object value)
+        public int Add(object? value)
         {
-            Add((ListBoxPanel)value);
-            return m_Panels.Count - 1;
-        }
-
-        public bool Contains(object value)
-        {
-            return m_Panels.Contains((ListBoxPanel)value);
-        }
-
-        public int IndexOf(object value)
-        {
-            return m_Panels.IndexOf((ListBoxPanel)value);
-        }
-
-        public void Insert(int index, object value)
-        {
-            Insert(index, (ListBoxPanel)value);
-        }
-
-        public bool IsFixedSize
-        {
-            get
+            if (value is ListBoxPanel panel)
             {
-                return false;
+                Add(panel);
+                return m_Panels.Count - 1;
+            }
+            throw new ArgumentException("Value must be of type ListBoxPanel", nameof(value));
+        }
+
+        public bool Contains(object? value)
+        {
+            return value is ListBoxPanel panel && m_Panels.Contains(panel);
+        }
+
+        public int IndexOf(object? value)
+        {
+            return value is ListBoxPanel panel ? m_Panels.IndexOf(panel) : -1;
+        }
+
+        public void Insert(int index, object? value)
+        {
+            if (value is ListBoxPanel panel)
+            {
+                Insert(index, panel);
             }
         }
 
-        public void Remove(object value)
+        public void Remove(object? value)
         {
-            Remove((ListBoxPanel)value);
+            if (value is ListBoxPanel panel)
+            {
+                Remove(panel);
+            }
         }
 
-        object System.Collections.IList.this[int index]
+        object? System.Collections.IList.this[int index]
         {
             get
             {
@@ -169,7 +171,10 @@ namespace CDBurnerXP.Controls
             }
             set
             {
-                m_Panels[index] = (ListBoxPanel)value;
+                if (value is ListBoxPanel panel)
+                {
+                    m_Panels[index] = panel;
+                }
             }
         }
 
@@ -185,6 +190,14 @@ namespace CDBurnerXP.Controls
         public bool IsSynchronized
         {
             get {
+                return false;
+            }
+        }
+
+        public bool IsFixedSize
+        {
+            get
+            {
                 return false;
             }
         }

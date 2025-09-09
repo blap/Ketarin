@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>ketarin.ico</ApplicationIcon>
+    <AssemblyName>Ketarin</AssemblyName>
+    <RootNamespace>Ketarin</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AssemblyTitle>Ketarin</AssemblyTitle>
+    <AssemblyDescription>A small application to keep a collection of setup files up-to-date.</AssemblyDescription>
+    <AssemblyCompany>Canneverbe Limited</AssemblyCompany>
+    <AssemblyProduct>Ketarin</AssemblyProduct>
+    <AssemblyCopyright>© Canneverbe Limited 2008-2020</AssemblyCopyright>
+    <AssemblyVersion>1.9.0.0</AssemblyVersion>
+    <AssemblyFileVersion>1.9.0.0</AssemblyFileVersion>
+    <NoWarn>WFO1000</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="ketarin.ico" />
+    <Content Include="app.manifest" />
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>

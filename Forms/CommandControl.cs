@@ -1,15 +1,15 @@
-﻿using System;
+using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Text;
 using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
+using Ketarin.Database; // Add reference to our new database namespace
+using wyDay.Controls;
 
 namespace Ketarin.Forms
 {
-    /// <summary>
-    /// Allows editing of either batch or C# commands.
-    /// </summary>
     public partial class CommandControl : UserControl
     {
         private const string csSample = @"/*
@@ -37,13 +37,23 @@ namespace Ketarin.Forms
 
         private string[] variableNames = new string[0];
 
-        #region Properties
+        public CommandControl()
+        {
+            InitializeComponent();
+            
+            // Configure the TextBox for code editing
+            txtCode.Font = new Font(FontFamily.GenericMonospace, 10);
+            txtCode.Multiline = true;
+            txtCode.ScrollBars = ScrollBars.Both;
+            txtCode.AcceptsTab = true;
+            txtCode.WordWrap = false;
+        }
         
         /// <summary>
         /// Gets or sets the command text.
         /// </summary>
         [DefaultValue("")]
-        public override string Text
+        public new string Text
         {
             get
             {
@@ -51,7 +61,7 @@ namespace Ketarin.Forms
             }
             set
             {
-                txtCode.Text = value;
+                txtCode.Text = value ?? string.Empty;
             }
         }
 
@@ -102,6 +112,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the currently exiting variables for the current application.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string[] VariableNames
         {
             get { return this.variableNames; }
@@ -110,43 +121,42 @@ namespace Ketarin.Forms
                 this.variableNames = value;
 
                 // Remove old menu items
-                for (int i = cmnuCommand.MenuItems.Count - 1; i >= 0; i--)
+                for (int i = cmnuCommand.Items.Count - 1; i >= 0; i--)
                 {
-                    if (!string.IsNullOrEmpty(cmnuCommand.MenuItems[i].Tag as string))
+                    if (!string.IsNullOrEmpty(cmnuCommand.Items[i].Tag as string))
                     {
-                        cmnuCommand.MenuItems.RemoveAt(i);
+                        cmnuCommand.Items.RemoveAt(i);
                     }
                 }
 
                 // Add necessary menu items
                 if (this.VariableNames != null && this.VariableNames.Length > 0)
                 {
-                    MenuItem varSeparator = new MenuItem("-");
+                    ToolStripSeparator varSeparator = new ToolStripSeparator();
                     varSeparator.Tag = "VarSeparator";
-                    cmnuCommand.MenuItems.Add(0,varSeparator);
+                    cmnuCommand.Items.Insert(0, varSeparator);
 
                     for (int i = this.VariableNames.Length - 1; i >= 0; i--)
                     {
-                        MenuItem varItem = new MenuItem("{" + VariableNames[i] + "}", delegate(object sender, EventArgs ev)
-                        {
-                            txtCode.InsertText(txtCode.CurrentPosition, ((MenuItem)sender).Text);
-                        });
+                        ToolStripMenuItem varItem = new ToolStripMenuItem("{" + VariableNames[i] + "}");
                         varItem.Tag = VariableNames[i];
-                        cmnuCommand.MenuItems.Add(0, varItem);
+                        varItem.Click += (sender, ev) => {
+                            if (sender is ToolStripMenuItem menuItem)
+                            {
+                                txtCode.SelectedText = menuItem.Text;
+                            }
+                        };
+                        cmnuCommand.Items.Insert(0, varItem);
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Gets or sets the currently edited application.
+        /// Gets or sets the application associated with this command control.
         /// </summary>
-        [Browsable(false)]
-        public ApplicationJob Application
-        {
-            get;
-            set;
-        }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public ApplicationJob? Application { get; set; }
 
         /// <summary>
         /// Gets or sets whether to indent the button.
@@ -186,65 +196,34 @@ namespace Ketarin.Forms
                         mnuCSScript.Checked = false;
                         mnuPowerShell.Checked = true;
                         mnuValidate.Enabled = false;
-                        txtCode.LexerLanguage = "powershell";
+                        // txtCode.LexerLanguage = "powershell"; // Removed Scintilla-specific property
                         if (string.IsNullOrEmpty(txtCode.Text))
                         {
                             txtCode.Text = psSample;
                         }
                         break;
-
                     case ScriptType.CS:
                         mnuBatchScript.Checked = false;
                         mnuCSScript.Checked = true;
-                        mnuValidate.Enabled = true;
                         mnuPowerShell.Checked = false;
-                        txtCode.LexerLanguage = "cs";
+                        mnuValidate.Enabled = true;
+                        // txtCode.LexerLanguage = "cs"; // Removed Scintilla-specific property
                         if (string.IsNullOrEmpty(txtCode.Text))
                         {
                             txtCode.Text = csSample;
                         }
                         break;
-
                     default:
                         mnuBatchScript.Checked = true;
                         mnuCSScript.Checked = false;
-                        mnuValidate.Enabled = false;
                         mnuPowerShell.Checked = false;
-                        txtCode.LexerLanguage = "batch";
-
-                        if (txtCode.Text == csSample)
-                        {
-                            txtCode.Text = string.Empty;
-                        }
+                        mnuValidate.Enabled = false;
+                        // txtCode.LexerLanguage = "batch"; // Removed Scintilla-specific property
                         break;
-                }
-
-                if (this.IsHandleCreated)
-                {
-                    LoadSnippets();
                 }
             }
         }
-
-        #endregion
-
-        public CommandControl()
-        {
-            InitializeComponent();
-            CommandType = ScriptType.Batch;
-            this.txtCode.ContextMenu = cmnuCommand;
-        }
-
-        protected override void OnLoad(EventArgs e)
-        {
-            if (DesignMode) return;
-
-            base.OnLoad(e);
-            
-            bCommand.Left += IndentButton;
-            LoadSnippets();
-        }
-
+        
         /// <summary>
         /// Shortcut function to add multiple collection of variable
         /// names at once.
@@ -261,52 +240,81 @@ namespace Ketarin.Forms
             VariableNames = varNames.ToArray();
         }
 
+        /// <summary>
+        /// Loads snippets from the database and populates the context menu.
+        /// </summary>
         private void LoadSnippets()
         {
-            mnuInsertSnippet.MenuItems.Clear();
-            mnuDeleteSnippet.MenuItems.Clear();
-
-            while (mnuSaveAs.MenuItems.Count > 2)
+            // Remove existing snippet menu items tagged as "Snippet"
+            for (int i = cmnuCommand.Items.Count - 1; i >= 0; i--)
             {
-                mnuSaveAs.MenuItems.RemoveAt(2);
+                if (cmnuCommand.Items[i].Tag as string == "Snippet")
+                {
+                    cmnuCommand.Items.RemoveAt(i);
+                }
             }
 
-            Snippet[] snippets = DbManager.GetSnippets();
-            foreach (Snippet snippet in snippets)
+            // Load snippets from the database
+            JsonSnippet[] snippets = JsonDbManager.GetSnippets();
+            
+            // Add a separator and menu items for each snippet
+            if (snippets.Length > 0)
             {
-                MenuItem newItem = new MenuItem(snippet.Name) {Tag = snippet};
-                newItem.Click += this.OnInsertSnippetClick;
-                mnuInsertSnippet.MenuItems.Add(newItem);
+                // Find the position of sepSnippets to insert after it
+                int sepIndex = cmnuCommand.Items.IndexOf(sepSnippets);
+                int insertIndex = sepIndex + 1;
+                
+                // Add separator before snippets if not already present
+                ToolStripSeparator snippetSeparator = new ToolStripSeparator();
+                snippetSeparator.Tag = "Snippet";
+                cmnuCommand.Items.Insert(insertIndex, snippetSeparator);
+                insertIndex++;
 
-                newItem = new MenuItem(snippet.Name) {Tag = snippet};
-                newItem.Click += this.OnDeleteSnippetClick;
-                mnuDeleteSnippet.MenuItems.Add(newItem);
-
-                newItem = new MenuItem(snippet.Name) {Tag = snippet};
-                newItem.Click += this.OnSaveSnippetAs;
-                mnuSaveAs.MenuItems.Add(newItem);
+                // Add menu items for each snippet
+                foreach (JsonSnippet snippet in snippets)
+                {
+                    ToolStripMenuItem snippetItem = new ToolStripMenuItem(snippet.Name);
+                    snippetItem.Tag = "Snippet";
+                    
+                    // Create a Snippet object to associate with the menu item
+                    Snippet snippetObj = new Snippet()
+                    {
+                        Guid = !string.IsNullOrEmpty(snippet.SnippetGuid) ? Guid.Parse(snippet.SnippetGuid ?? string.Empty) : Guid.NewGuid(),
+                        Name = snippet.Name ?? string.Empty,
+                        Type = Command.ConvertToScriptType(snippet.Type ?? string.Empty),
+                        Text = snippet.Text ?? string.Empty
+                    };
+                    
+                    // Associate the snippet object with the menu item
+                    snippetItem.Tag = snippetObj;
+                    
+                    // Add event handlers
+                    snippetItem.Click += OnInsertSnippetClick;
+                    
+                    // Add submenu for additional actions
+                    ToolStripMenuItem saveAsItem = new ToolStripMenuItem("Save as");
+                    saveAsItem.Tag = snippetObj;
+                    saveAsItem.Click += OnSaveSnippetAs;
+                    snippetItem.DropDownItems.Add(saveAsItem);
+                    
+                    ToolStripMenuItem deleteItem = new ToolStripMenuItem("Delete");
+                    deleteItem.Tag = snippetObj;
+                    deleteItem.Click += OnDeleteSnippetClick;
+                    snippetItem.DropDownItems.Add(deleteItem);
+                    
+                    cmnuCommand.Items.Insert(insertIndex, snippetItem);
+                    insertIndex++;
+                }
             }
-
-            mnuDeleteSnippet.Enabled = (snippets.Length > 0);
-            mnuInsertSnippet.Enabled = (snippets.Length > 0);
-            sepSaveAs.Visible = (snippets.Length > 0);
         }
 
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        private void bCommand_Click(object sender, EventArgs e)
         {
-            switch (keyData)
-            {
-                case Keys.Control | Keys.B:
-                case Keys.Control | Keys.Shift | Keys.B:
-                    ValidateScript(true);
-                    return true;
-            }
-
-            return base.ProcessCmdKey(ref msg, keyData);
+            cmnuCommand.Show(bCommand, new Point(0, bCommand.Height));
         }
 
         /// <summary>
-        /// Verifies the syntactic validity of the user script.
+        /// Validates the current script (C# only).
         /// </summary>
         private bool ValidateScript(bool confirmOK)
         {
@@ -317,46 +325,40 @@ namespace Ketarin.Forms
                 CompilerErrorCollection errors;
                 testInstruction.Compile(out errors);
 
-                txtCode.AnnotationClearAll();
-                txtCode.AnnotationVisible = ScintillaNET.Annotation.Boxed;
-                txtCode.Styles[1].BackColor = Color.FromArgb(0xFFF0F0);
-                txtCode.Styles[1].ForeColor = Color.FromArgb(0x800000);
-                txtCode.Styles[2].BackColor = Color.FromArgb(0xFFFFF0);
-                txtCode.Styles[2].ForeColor = Color.FromArgb(0x808000);
-
+                // For TextBox, we'll show errors in a simple way
                 if (errors.HasErrors)
                 {
-                    bool hasScrolled = false;
-
+                    StringBuilder errorText = new StringBuilder();
+                    errorText.AppendLine("Script validation errors:");
+                    
                     foreach (CompilerError error in errors)
                     {
-                        int lineNum = error.Line - testInstruction.LineAtCodeStart;
-                        if (!hasScrolled)
-                        {
-                            hasScrolled = true;
-                            txtCode.LineScroll(lineNum, 0);
-                        }
-
-                        txtCode.Lines[lineNum].AnnotationText = error.ErrorText;
-                        txtCode.Lines[lineNum].AnnotationStyle = 1;
-                        if (error.IsWarning)
-                        {
-                            txtCode.Lines[lineNum].AnnotationStyle = 2;
-                        }
+                        errorText.AppendLine($"Line {error.Line}: {error.ErrorText}");
                     }
+                    
+                    MessageBox.Show(this, errorText.ToString(), 
+                        System.Windows.Forms.Application.ProductName, 
+                        MessageBoxButtons.OK, 
+                        MessageBoxIcon.Error);
                 }
                 else
                 {
                     if (confirmOK)
                     {
-                        MessageBox.Show(this, "No errors could be found in the script.", System.Windows.Forms.Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(this, "No errors could be found in the script.", 
+                            System.Windows.Forms.Application.ProductName, 
+                            MessageBoxButtons.OK, 
+                            MessageBoxIcon.Information);
                     }
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "The code cannot be compiled: " + ex.Message, System.Windows.Forms.Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, "The code cannot be compiled: " + ex.Message, 
+                    System.Windows.Forms.Application.ProductName, 
+                    MessageBoxButtons.OK, 
+                    MessageBoxIcon.Error);
             }
 
             return false;
@@ -411,7 +413,7 @@ namespace Ketarin.Forms
 
         private void mnuRedo_Click(object sender, EventArgs e)
         {
-            txtCode.Redo();
+            // TextBox doesn't support Redo, so do nothing
         }
 
         private void mnuUndo_Click(object sender, EventArgs e)
@@ -423,7 +425,7 @@ namespace Ketarin.Forms
         {
             try
             {
-                new Command(Text, CommandType).Execute(this.Application);
+                new Command(Text, CommandType).Execute(this.Application!);
 
                 MessageBox.Show(this, "Script executed successfully.", System.Windows.Forms.Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -452,49 +454,61 @@ namespace Ketarin.Forms
             }
         }
 
-        private void OnInsertSnippetClick(object sender, EventArgs e)
+        private void OnInsertSnippetClick(object? sender, EventArgs e)
         {
-            Snippet snippet = ((MenuItem)sender).Tag as Snippet;
-            if (snippet != null)
+            if (sender is ToolStripMenuItem menuItem)
             {
-                txtCode.InsertText(txtCode.CurrentPosition, snippet.Text);
+                Snippet? snippet = menuItem.Tag as Snippet;
+                if (snippet != null)
+                {
+                    // For TextBox, we'll use SelectedText instead of InsertText
+                    txtCode.SelectedText = snippet.Text;
+                }
             }
         }
 
-        private void OnDeleteSnippetClick(object sender, EventArgs e)
+        private void OnDeleteSnippetClick(object? sender, EventArgs e)
         {
-            Snippet snippet = ((MenuItem)sender).Tag as Snippet;
-            if (snippet != null)
+            if (sender is ToolStripMenuItem menuItem)
             {
-                snippet.Delete();
-                LoadSnippets();
+                Snippet? snippet = menuItem.Tag as Snippet;
+                if (snippet != null)
+                {
+                    snippet.Delete();
+                    LoadSnippets();
+                }
             }
         }
 
-        private void OnSaveSnippetAs(object sender, EventArgs e)
+        private void OnSaveSnippetAs(object? sender, EventArgs e)
         {
-            Snippet snippet = ((MenuItem)sender).Tag as Snippet;
-            if (snippet != null)
+            if (sender is ToolStripMenuItem menuItem)
             {
-                string text = string.IsNullOrEmpty(txtCode.SelectedText) ? txtCode.Text : txtCode.SelectedText;
-                snippet.Text = text;
-                snippet.Type = CommandType;
-                snippet.Save();
+                Snippet? snippet = menuItem.Tag as Snippet;
+                if (snippet != null)
+                {
+                    string text = string.IsNullOrEmpty(txtCode.SelectedText) ? txtCode.Text : txtCode.SelectedText;
+                    snippet.Text = text;
+                    snippet.Type = CommandType;
+                    snippet.Save();
+                }
             }
         }
 
-        private void cmnuCommand_Popup(object sender, EventArgs e)
+        private void cmnuCommand_Opening(object sender, CancelEventArgs e)
         {
             this.LoadSnippets();
 
-            bool isEditControl = (((ContextMenu)sender).SourceControl == txtCode);
+            bool isEditControl = (((ContextMenuStrip)sender).SourceControl == txtCode);
             sepDefaultCommands.Visible = isEditControl;
             mnuCut.Visible = isEditControl;
             mnuCopy.Visible = isEditControl;
             mnuPaste.Visible = isEditControl;
-            mnuPaste.Enabled = txtCode.CanPaste;
+            // TextBox doesn't have CanPaste property, use standard approach
+            mnuPaste.Enabled = Clipboard.ContainsText();
             mnuRedo.Visible = isEditControl;
-            mnuRedo.Enabled = txtCode.CanRedo;
+            // TextBox doesn't support Redo, so always disable it
+            mnuRedo.Enabled = false;
             mnuUndo.Visible = isEditControl;
             mnuUndo.Enabled = txtCode.CanUndo;
             mnuClear.Visible = isEditControl;
@@ -503,7 +517,7 @@ namespace Ketarin.Forms
             sepSelection.Visible = isEditControl;
             
             // Variable menu items should only be visible in edit control too
-            foreach (MenuItem item in cmnuCommand.MenuItems)
+            foreach (ToolStripItem item in cmnuCommand.Items)
             {
                 if (!string.IsNullOrEmpty(item.Tag as string))
                 {

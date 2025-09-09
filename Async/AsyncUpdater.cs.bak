@@ -1,0 +1,412 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using CDBurnerXP;
+using CDBurnerXP.IO;
+using FTPLib;
+using Ketarin.Forms;
+using MyDownloader.Core;
+using MyDownloader.Extension.Protocols;
+using Settings = CDBurnerXP.Settings;
+
+namespace Ketarin.Async
+{
+    /// <summary>
+    /// Handles the updating process of a list of application jobs using async/await patterns.
+    /// </summary>
+    public class AsyncUpdater
+    {
+        public const SecurityProtocolType DefaultHttpProtocols = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+
+        private ApplicationJob[] m_Jobs;
+        private Dictionary<ApplicationJob, short> m_Progress;
+        private readonly Dictionary<ApplicationJob, Status> m_Status = new Dictionary<ApplicationJob, Status>();
+        private readonly Dictionary<ApplicationJob, long> m_Size = new Dictionary<ApplicationJob, long>();
+        private bool m_CancelUpdates;
+        protected int m_LastProgress = -1;
+        private List<ApplicationJobError> m_Errors;
+        private bool m_OnlyCheck;
+        private int m_ThreadLimit = 2;
+        private readonly List<Task> m_Tasks = new List<Task>();
+        private readonly CookieContainer m_Cookies = new CookieContainer();
+        private static readonly List<WebRequest> m_Requests = new List<WebRequest>();
+        private bool m_InstallUpdated;
+        private CancellationTokenSource m_CancellationTokenSource;
+
+        #region Properties
+
+        /// <summary>
+        /// Forces all applications, even if no updates exist, to download.
+        /// Also ignores the CheckForUpdatesOnly property of applications.
+        /// </summary>
+        public bool ForceDownload
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Ignores the CheckForUpdatesOnly property of applications (for setups).
+        /// </summary>
+        public bool IgnoreCheckForUpdatesOnly
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets the list of errors which happened after an update process.
+        /// </summary>
+        public ApplicationJobError[] Errors
+        {
+            get
+            {
+                return m_Errors.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Gets whether or not the updating process is still ongoing.
+        /// </summary>
+        public bool IsBusy { get; private set; }
+
+        #endregion
+
+        /// <summary>
+        /// Represents a download status of an application.
+        /// </summary>
+        public enum Status
+        {
+            Idle,
+            Downloading,
+            UpdateAvailable,
+            UpdateSuccessful,
+            NoUpdate,
+            Failure,
+        }
+
+        #region JobProgressChangedEventArgs
+
+        /// <summary>
+        /// Holds all necessary information for the event that
+        /// the download progress of an application changed.
+        /// </summary>
+        public class JobProgressChangedEventArgs : ProgressChangedEventArgs
+        {
+            private readonly ApplicationJob m_Job;
+
+            #region Properties
+
+            /// <summary>
+            /// Gets the application for which the download progress changed.
+            /// </summary>
+            public ApplicationJob ApplicationJob
+            {
+                get
+                {
+                    return m_Job;
+                }
+            }
+
+            #endregion
+
+            public JobProgressChangedEventArgs(int progressPercentage, ApplicationJob job)
+                : base(progressPercentage, null)
+            {
+                m_Job = job;
+            }
+        }
+
+        #endregion
+
+        #region JobStatusChangedEventArgs
+
+        /// <summary>
+        /// Holds all necessary information for the event that
+        /// the update status of an application changed.
+        /// </summary>
+        public class JobStatusChangedEventArgs : EventArgs
+        {
+            private readonly ApplicationJob m_Job;
+            private readonly Status m_NewStatus;
+
+            #region Properties
+
+            /// <summary>
+            /// Gets the application of which the status has changed.
+            /// </summary>
+            public ApplicationJob ApplicationJob
+            {
+                get
+                {
+                    return m_Job;
+                }
+            }
+
+            /// <summary>
+            /// Gets the new status of the application.
+            /// </summary>
+            public Status NewStatus
+            {
+                get
+                {
+                    return m_NewStatus;
+                }
+            }
+
+            #endregion
+
+            public JobStatusChangedEventArgs(ApplicationJob job, Status newStatus)
+            {
+                m_Job = job;
+                m_NewStatus = newStatus;
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Allows all routines involved in the update to
+        /// store the corresponding WebRequest here. When the user
+        /// cancels the update, all of these requests will be aborted.
+        /// </summary>
+        public static void RegisterRequest(WebRequest request)
+        {
+            lock (m_Requests)
+            {
+                m_Requests.Add(request);
+            }
+        }
+
+        /// <summary>
+        /// Unregisters a previously registered request.
+        /// </summary>
+        public static void UnregisterRequest(WebRequest request)
+        {
+            lock (m_Requests)
+            {
+                m_Requests.Remove(request);
+            }
+        }
+
+        /// <summary>
+        /// Cancels the current update process.
+        /// </summary>
+        public void Cancel()
+        {
+            m_CancelUpdates = true;
+            
+            // Cancel all tasks
+            m_CancellationTokenSource?.Cancel();
+            
+            // Abort all registered requests
+            lock (m_Requests)
+            {
+                foreach (WebRequest request in m_Requests)
+                {
+                    try
+                    {
+                        request.Abort();
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
+                }
+                m_Requests.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Begins the update process of a list of applications.
+        /// </summary>
+        /// <param name="jobs">Applications to update</param>
+        /// <param name="onlyCheck">If true, applications will only be checked for updates, not downloaded</param>
+        /// <param name="installUpdated">If true, applications will be installed after updating</param>
+        public async Task BeginUpdateAsync(ApplicationJob[] jobs, bool onlyCheck, bool installUpdated)
+        {
+            if (this.IsBusy)
+            {
+                throw new InvalidOperationException("Updater is already busy.");
+            }
+
+            m_CancellationTokenSource = new CancellationTokenSource();
+            m_CancelUpdates = false;
+            m_OnlyCheck = onlyCheck;
+            m_InstallUpdated = installUpdated;
+            m_Jobs = jobs;
+            m_Progress = new Dictionary<ApplicationJob, short>();
+            m_Errors = new List<ApplicationJobError>();
+            this.IsBusy = true;
+            m_ThreadLimit = Convert.ToInt32(Settings.GetValue("ThreadCount", 2));
+
+            try
+            {
+                await UpdateApplicationsAsync(m_CancellationTokenSource.Token);
+            }
+            finally
+            {
+                this.IsBusy = false;
+                m_CancellationTokenSource.Dispose();
+                m_CancellationTokenSource = null;
+            }
+
+            // Fire update completed event
+            this.UpdateCompleted?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
+        #region Update methods
+
+        /// <summary>
+        /// Updates all applications asynchronously.
+        /// </summary>
+        private async Task UpdateApplicationsAsync(CancellationToken cancellationToken)
+        {
+            // Reset status and progress
+            foreach (ApplicationJob job in m_Jobs)
+            {
+                m_Status[job] = Status.Idle;
+                m_Progress[job] = 0;
+            }
+
+            // Check for online updates first
+            await CheckForOnlineUpdatesAsync(cancellationToken);
+
+            // Update each application
+            var tasks = new List<Task>();
+            ApplicationJob previousJob = null;
+
+            foreach (ApplicationJob job in m_Jobs)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                // Wait until we can start a new task based on thread limit and exclusivity rules
+                while (tasks.Count >= m_ThreadLimit || 
+                       (tasks.Count > 0 && (m_InstallUpdated || job.ExclusiveDownload || (previousJob != null && previousJob.ExclusiveDownload))))
+                {
+                    // Remove completed tasks
+                    tasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
+
+                    if (tasks.Count >= m_ThreadLimit)
+                    {
+                        // Wait for any task to complete
+                        await Task.WhenAny(tasks).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await Task.Delay(200, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                // Start new task for this job
+                Task task = Task.Run(() => StartNewTaskAsync(job, cancellationToken));
+                tasks.Add(task);
+                previousJob = job;
+            }
+
+            // Wait for all remaining tasks to complete
+            while (tasks.Count > 0)
+            {
+                // Remove completed tasks
+                tasks.RemoveAll(t => t.IsCompleted || t.IsFaulted || t.IsCanceled);
+
+                if (tasks.Count > 0)
+                {
+                    await Task.WhenAny(tasks).ConfigureAwait(false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Starts a new task for updating a specific application.
+        /// </summary>
+        private async Task StartNewTaskAsync(ApplicationJob job, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await UpdateApplicationAsync(job, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions
+                m_Errors.Add(new ApplicationJobError(job, ex));
+                SetStatus(job, Status.Failure);
+            }
+        }
+
+        /// <summary>
+        /// Updates a single application asynchronously.
+        /// </summary>
+        private async Task UpdateApplicationAsync(ApplicationJob job, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            // Implementation would go here - this is a simplified version
+            // The actual implementation would need to convert the synchronous methods
+            // in the original Updater class to async versions
+            
+            // For now, we'll just simulate the process
+            SetStatus(job, Status.Downloading);
+            
+            // Simulate some work
+            await Task.Delay(1000, cancellationToken);
+            
+            SetStatus(job, Status.UpdateSuccessful);
+        }
+
+        /// <summary>
+        /// Checks for online updates asynchronously.
+        /// </summary>
+        private async Task CheckForOnlineUpdatesAsync(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            // Implementation would go here
+            await Task.Delay(100, cancellationToken);
+        }
+
+        #endregion
+
+        #region Helper methods
+
+        /// <summary>
+        /// Sets the status of an application and fires the appropriate event.
+        /// </summary>
+        private void SetStatus(ApplicationJob job, Status status)
+        {
+            m_Status[job] = status;
+            this.StatusChanged?.Invoke(this, new JobStatusChangedEventArgs(job, status));
+        }
+
+        /// <summary>
+        /// Gets the current status of an application.
+        /// </summary>
+        public Status GetStatus(ApplicationJob job)
+        {
+            return m_Status.TryGetValue(job, out Status status) ? status : Status.Idle;
+        }
+
+        /// <summary>
+        /// Gets the current progress of an application.
+        /// </summary>
+        public short GetProgress(ApplicationJob job)
+        {
+            return m_Progress != null && m_Progress.TryGetValue(job, out short progress) ? progress : (short)0;
+        }
+
+        #endregion
+    }
+}

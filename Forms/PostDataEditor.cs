@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Data;
 using System.Text;
@@ -13,7 +13,7 @@ namespace Ketarin.Forms
     /// </summary>
     public partial class PostDataEditor : Form
     {
-        private string m_PostData;
+        private string? m_PostData;
         private readonly DataTable m_Table = new DataTable();
 
         #region Properties
@@ -23,7 +23,8 @@ namespace Ketarin.Forms
         /// Example: a=b&amp;c=d
         /// </summary>
         [Browsable(false)]
-        public string PostData
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string? PostData
         {
             get { return m_PostData; }
             set

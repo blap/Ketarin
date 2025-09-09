@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows.Forms;
 using CDBurnerXP.Controls;
 using wyDay.Controls;
@@ -36,9 +36,9 @@ namespace Ketarin.Forms
             this.components = new System.ComponentModel.Container();
             this.bCancel = new System.Windows.Forms.Button();
             this.bOK = new wyDay.Controls.SplitButton();
-            this.mnuInstall = new System.Windows.Forms.ContextMenu();
-            this.mnuInstallOnly = new System.Windows.Forms.MenuItem();
-            this.mnuUpdateAndInstall = new System.Windows.Forms.MenuItem();
+            this.mnuInstall = new System.Windows.Forms.ContextMenuStrip();
+            this.mnuInstallOnly = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuUpdateAndInstall = new System.Windows.Forms.ToolStripMenuItem();
             this.olvLists = new CDBurnerXP.Controls.ObjectListView();
             this.colListName = new CDBurnerXP.Controls.OLVColumn();
             this.colListAppNames = new CDBurnerXP.Controls.OLVColumn();
@@ -50,21 +50,21 @@ namespace Ketarin.Forms
             this.bNewList = new System.Windows.Forms.Button();
             this.bRemoveList = new System.Windows.Forms.Button();
             this.bSelectApp = new wyDay.Controls.SplitButton();
-            this.selectionMenu = new System.Windows.Forms.ContextMenu();
-            this.mnuSelectAll = new System.Windows.Forms.MenuItem();
-            this.mnuSelectNone = new System.Windows.Forms.MenuItem();
-            this.mnuInvertSelection = new System.Windows.Forms.MenuItem();
-            this.sepNewList = new System.Windows.Forms.MenuItem();
-            this.mnuSaveAsNewList = new System.Windows.Forms.MenuItem();
+            this.selectionMenu = new System.Windows.Forms.ContextMenuStrip();
+            this.mnuSelectAll = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuSelectNone = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuInvertSelection = new System.Windows.Forms.ToolStripMenuItem();
+            this.sepNewList = new System.Windows.Forms.ToolStripSeparator();
+            this.mnuSaveAsNewList = new System.Windows.Forms.ToolStripMenuItem();
             this.bAddApp = new System.Windows.Forms.Button();
             this.bRemoveApp = new System.Windows.Forms.Button();
             this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.pnlApps = new System.Windows.Forms.Panel();
             this.pnlAppLists = new System.Windows.Forms.Panel();
             this.lblUndoDelete = new System.Windows.Forms.LinkLabel();
-            this.cmnuView = new System.Windows.Forms.ContextMenu();
-            this.mnuTileView = new System.Windows.Forms.MenuItem();
-            this.mnuDetailsView = new System.Windows.Forms.MenuItem();
+            this.cmnuView = new System.Windows.Forms.ContextMenuStrip();
+            this.mnuTileView = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuDetailsView = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.olvLists)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.olvApps)).BeginInit();
             this.tableLayoutPanel.SuspendLayout();
@@ -91,7 +91,7 @@ namespace Ketarin.Forms
             this.bOK.Location = new System.Drawing.Point(434, 359);
             this.bOK.Name = "bOK";
             this.bOK.Size = new System.Drawing.Size(75, 23);
-            this.bOK.SplitMenu = this.mnuInstall;
+            this.bOK.SplitMenuStrip = this.mnuInstall;
             this.bOK.TabIndex = 98;
             this.bOK.Text = "I&nstall";
             this.bOK.UseVisualStyleBackColor = true;
@@ -99,19 +99,17 @@ namespace Ketarin.Forms
             // 
             // mnuInstall
             // 
-            this.mnuInstall.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.mnuInstall.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuInstallOnly,
             this.mnuUpdateAndInstall});
             // 
             // mnuInstallOnly
             // 
-            this.mnuInstallOnly.Index = 0;
             this.mnuInstallOnly.Text = "&Install";
             this.mnuInstallOnly.Click += new System.EventHandler(this.mnuInstallOnly_Click);
             // 
             // mnuUpdateAndInstall
             // 
-            this.mnuUpdateAndInstall.Index = 1;
             this.mnuUpdateAndInstall.Text = "Upd&ate and install";
             this.mnuUpdateAndInstall.Click += new System.EventHandler(this.mnuUpdateAndInstall_Click);
             // 
@@ -146,8 +144,8 @@ namespace Ketarin.Forms
             this.olvLists.UseCompatibleStateImageBehavior = false;
             this.olvLists.View = System.Windows.Forms.View.Tile;
             this.olvLists.KeyDown += new System.Windows.Forms.KeyEventHandler(this.olvLists_KeyDown);
-            this.olvLists.CellEditStarting += new CDBurnerXP.Controls.ObjectListView.CellEditEventHandler(this.olvLists_CellEditStarting);
-            this.olvLists.CellEditFinished += new CDBurnerXP.Controls.ObjectListView.CellEditEventHandler(this.olvLists_CellEditFinished);
+            // this.olvLists.CellEditStarting += new CDBurnerXP.Controls.ObjectListView.CellEditEventHandler(this.olvLists_CellEditStarting);
+            // this.olvLists.CellEditFinished += new CDBurnerXP.Controls.ObjectListView.CellEditEventHandler(this.olvLists_CellEditFinished);
             this.olvLists.DragDrop += new System.Windows.Forms.DragEventHandler(this.olvLists_DragDrop);
             this.olvLists.SelectedIndexChanged += new System.EventHandler(this.olvLists_SelectedIndexChanged);
             this.olvLists.DragOver += new System.Windows.Forms.DragEventHandler(this.olvLists_DragOver);
@@ -263,14 +261,14 @@ namespace Ketarin.Forms
             this.bSelectApp.Name = "bSelectApp";
             this.bSelectApp.SeparateDropdownButton = false;
             this.bSelectApp.Size = new System.Drawing.Size(80, 23);
-            this.bSelectApp.SplitMenu = this.selectionMenu;
+            this.bSelectApp.SplitMenuStrip = this.selectionMenu;
             this.bSelectApp.TabIndex = 4;
             this.bSelectApp.Text = "Sele&ction";
             this.bSelectApp.UseVisualStyleBackColor = true;
             // 
             // selectionMenu
             // 
-            this.selectionMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.selectionMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuSelectAll,
             this.mnuSelectNone,
             this.mnuInvertSelection,
@@ -279,30 +277,25 @@ namespace Ketarin.Forms
             // 
             // mnuSelectAll
             // 
-            this.mnuSelectAll.Index = 0;
             this.mnuSelectAll.Text = "Select &all";
             this.mnuSelectAll.Click += new System.EventHandler(this.mnuSelectAll_Click);
             // 
             // mnuSelectNone
             // 
-            this.mnuSelectNone.Index = 1;
             this.mnuSelectNone.Text = "Select &none";
             this.mnuSelectNone.Click += new System.EventHandler(this.mnuSelectNone_Click);
             // 
             // mnuInvertSelection
             // 
-            this.mnuInvertSelection.Index = 2;
             this.mnuInvertSelection.Text = "In&vert selection";
             this.mnuInvertSelection.Click += new System.EventHandler(this.mnuInvertSelection_Click);
             // 
             // sepNewList
             // 
-            this.sepNewList.Index = 3;
             this.sepNewList.Text = "-";
             // 
             // mnuSaveAsNewList
             // 
-            this.mnuSaveAsNewList.Index = 4;
             this.mnuSaveAsNewList.Text = "&Save as new list";
             this.mnuSaveAsNewList.Click += new System.EventHandler(this.mnuSaveAsNewList_Click);
             // 
@@ -391,22 +384,19 @@ namespace Ketarin.Forms
             // 
             // cmnuView
             // 
-            this.cmnuView.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.cmnuView.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuTileView,
             this.mnuDetailsView});
             // 
             // mnuTileView
             // 
             this.mnuTileView.Checked = true;
-            this.mnuTileView.Index = 0;
-            this.mnuTileView.RadioCheck = true;
+            this.mnuTileView.CheckState = System.Windows.Forms.CheckState.Checked;
             this.mnuTileView.Text = "&Tile view";
             this.mnuTileView.Click += new System.EventHandler(this.mnuTileView_Click);
             // 
             // mnuDetailsView
             // 
-            this.mnuDetailsView.Index = 1;
-            this.mnuDetailsView.RadioCheck = true;
             this.mnuDetailsView.Text = "&Details view";
             this.mnuDetailsView.Click += new System.EventHandler(this.mnuDetailsView_Click);
             // 
@@ -454,22 +444,22 @@ namespace Ketarin.Forms
         private SplitButton bSelectApp;
         private Button bAddApp;
         private Button bRemoveApp;
-        private ContextMenu selectionMenu;
+        private System.Windows.Forms.ContextMenuStrip selectionMenu;
         private OLVColumn colAppsName;
-        private MenuItem mnuSelectAll;
-        private MenuItem mnuSelectNone;
-        private MenuItem mnuInvertSelection;
-        private MenuItem sepNewList;
-        private MenuItem mnuSaveAsNewList;
+        private System.Windows.Forms.ToolStripMenuItem mnuSelectAll;
+        private System.Windows.Forms.ToolStripMenuItem mnuSelectNone;
+        private System.Windows.Forms.ToolStripMenuItem mnuInvertSelection;
+        private System.Windows.Forms.ToolStripSeparator sepNewList;
+        private System.Windows.Forms.ToolStripMenuItem mnuSaveAsNewList;
         private TableLayoutPanel tableLayoutPanel;
         private Panel pnlApps;
         private Panel pnlAppLists;
         private LinkLabel lblUndoDelete;
-        private ContextMenu mnuInstall;
-        private MenuItem mnuInstallOnly;
-        private MenuItem mnuUpdateAndInstall;
-        private ContextMenu cmnuView;
-        private MenuItem mnuTileView;
-        private MenuItem mnuDetailsView;
+        private System.Windows.Forms.ContextMenuStrip mnuInstall;
+        private System.Windows.Forms.ToolStripMenuItem mnuInstallOnly;
+        private System.Windows.Forms.ToolStripMenuItem mnuUpdateAndInstall;
+        private System.Windows.Forms.ContextMenuStrip cmnuView;
+        private System.Windows.Forms.ToolStripMenuItem mnuTileView;
+        private System.Windows.Forms.ToolStripMenuItem mnuDetailsView;
     }
 }

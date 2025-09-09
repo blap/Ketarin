@@ -15,11 +15,11 @@ namespace MyDownloader.Core
     {
         #region Fields
         
-        private string url;
+        private string url = string.Empty;
         private bool authenticate;
-        private string login;
-        private string password;
-        private IProtocolProvider provider;
+        private string login = string.Empty;
+        private string password = string.Empty;
+        private IProtocolProvider provider = null!;
 
         #endregion
 

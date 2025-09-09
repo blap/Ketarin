@@ -14,7 +14,7 @@ namespace MyDownloader.Extension.Protocols
 {
     public class HttpFtpProtocolExtension: IExtension
     {
-        internal static IHttpFtpProtocolParameters parameters;
+        internal static IHttpFtpProtocolParameters? parameters;
 
         #region IExtension Members
 
@@ -25,7 +25,7 @@ namespace MyDownloader.Extension.Protocols
 
         public IUIExtension UIExtension
         {
-            get { return null; }
+            get { return null!; }
         }
 
         public HttpFtpProtocolExtension():

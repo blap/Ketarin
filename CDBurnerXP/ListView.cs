@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
@@ -14,6 +14,7 @@ namespace CDBurnerXP.Controls
     /// </summary>
     public class ListView : System.Windows.Forms.ListView, IMirrorControl
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new int VirtualListSize
         {
             get { return base.VirtualListSize; }

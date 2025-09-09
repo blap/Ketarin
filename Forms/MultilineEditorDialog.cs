@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.ComponentModel;
 using CDBurnerXP.Forms;
 
 namespace Ketarin.Forms
@@ -14,6 +15,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the value which is to be edited.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string Value
         {
             get

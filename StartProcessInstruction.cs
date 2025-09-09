@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Xml.Serialization;
 
@@ -43,18 +43,12 @@ namespace Ketarin
         /// <summary>
         /// File name to be executed.
         /// </summary>
-        public string FileName
-        {
-            get; set;
-        }
+        public string FileName { get; set; } = string.Empty;
 
         /// <summary>
         /// Parameters for file execution.
         /// </summary>
-        public string Parameters
-        {
-            get; set;
-        }
+        public string Parameters { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets whether or not to wait for the process to complete.
@@ -88,12 +82,12 @@ namespace Ketarin
             }
 
             startInfo.CreateNoWindow = true;
-            Process proc = Process.Start(startInfo);
+            Process? proc = Process.Start(startInfo);
             if (this.WaitForExit && proc != null)
             {
                 proc.WaitForExit();
 
-                if (proc.ExitCode != 0)
+                if (proc != null && proc.HasExited && proc.ExitCode != 0)
                 {
                     throw new ApplicationException(string.Format("Process exited with error code {0}", proc.ExitCode));
                 }

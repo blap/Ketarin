@@ -1,9 +1,10 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Data;
-using System.Data.SQLite;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
+using Ketarin.Database;
 
 namespace Ketarin
 {
@@ -14,7 +15,7 @@ namespace Ketarin
         /// Application this instruction belongs to.
         /// </summary>
         [XmlIgnore()]
-        public ApplicationJob Application { get; set; }
+        public ApplicationJob Application { get; set; } = null!;
 
         /// <summary>
         /// Name of the instruction (type).
@@ -49,15 +50,14 @@ namespace Ketarin
                 serializer.Serialize(xmlWriter, this);
             }
 
-            using (IDbCommand command = transaction.Connection.CreateCommand())
+            // Save setup instruction to JSON database
+            JsonSetupInstruction jsonInstruction = new JsonSetupInstruction
             {
-                command.Transaction = transaction;
-                command.CommandText = "INSERT INTO setupinstructions (JobGuid, Position, Data) VALUES(@JobGuid, @Position, @Data)";
-                command.Parameters.Add(new SQLiteParameter("@JobGuid", DbManager.FormatGuid(this.Application.Guid)));
-                command.Parameters.Add(new SQLiteParameter("@Position", position));
-                command.Parameters.Add(new SQLiteParameter("@Data", output.ToString()));
-                command.ExecuteNonQuery();
-            }
+                JobGuid = this.Application.Guid.ToString(),
+                Position = position,
+                Data = output.ToString()
+            };
+            JsonDbManager.SaveSetupInstruction(jsonInstruction);
         }
 
         #region ICloneable Member

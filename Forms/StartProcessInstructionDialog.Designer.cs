@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows.Forms;
 using CDBurnerXP.Controls;
 using wyDay.Controls;
@@ -38,12 +38,12 @@ namespace Ketarin.Forms
             this.lblParameters = new System.Windows.Forms.Label();
             this.txtParameters = new Ketarin.Forms.VariableTextBox();
             this.bInsertArgument = new wyDay.Controls.SplitButton();
-            this.argumentsMenu = new System.Windows.Forms.ContextMenu();
-            this.mnuPassive = new System.Windows.Forms.MenuItem();
-            this.mnuQN = new System.Windows.Forms.MenuItem();
-            this.mnuS = new System.Windows.Forms.MenuItem();
-            this.mnuNsis = new System.Windows.Forms.MenuItem();
-            this.mnuVerySilent = new System.Windows.Forms.MenuItem();
+            this.argumentsMenu = new System.Windows.Forms.ContextMenuStrip();
+            this.mnuPassive = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuQN = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuS = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuNsis = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuVerySilent = new System.Windows.Forms.ToolStripMenuItem();
             this.lnkSilentSetups = new CDBurnerXP.Controls.WebLink();
             this.olvEnvironmentVariables = new CDBurnerXP.Controls.ObjectListView();
             this.colName = new CDBurnerXP.Controls.OLVColumn();
@@ -52,6 +52,7 @@ namespace Ketarin.Forms
             this.bBrowse = new System.Windows.Forms.Button();
             this.chkWaitUntilExit = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.olvEnvironmentVariables)).BeginInit();
+            this.argumentsMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // bCancel
@@ -109,14 +110,14 @@ namespace Ketarin.Forms
             this.bInsertArgument.Name = "bInsertArgument";
             this.bInsertArgument.SeparateDropdownButton = false;
             this.bInsertArgument.Size = new System.Drawing.Size(61, 23);
-            this.bInsertArgument.SplitMenu = this.argumentsMenu;
+            this.bInsertArgument.SplitMenuStrip = this.argumentsMenu;
             this.bInsertArgument.TabIndex = 5;
             this.bInsertArgument.Text = "I&nsert";
             this.bInsertArgument.UseVisualStyleBackColor = true;
             // 
             // argumentsMenu
             // 
-            this.argumentsMenu.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.argumentsMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuPassive,
             this.mnuQN,
             this.mnuS,
@@ -125,31 +126,36 @@ namespace Ketarin.Forms
             // 
             // mnuPassive
             // 
-            this.mnuPassive.Index = 0;
+            this.mnuPassive.Name = "mnuPassive";
+            this.mnuPassive.Size = new System.Drawing.Size(187, 22);
             this.mnuPassive.Tag = "/passive";
             this.mnuPassive.Text = "/passive (MS hotfixes)";
             // 
             // mnuQN
             // 
-            this.mnuQN.Index = 1;
+            this.mnuQN.Name = "mnuQN";
+            this.mnuQN.Size = new System.Drawing.Size(187, 22);
             this.mnuQN.Tag = "/qn";
             this.mnuQN.Text = "/qn (MSI Installer)";
             // 
             // mnuS
             // 
-            this.mnuS.Index = 2;
+            this.mnuS.Name = "mnuS";
+            this.mnuS.Size = new System.Drawing.Size(187, 22);
             this.mnuS.Tag = "/s";
             this.mnuS.Text = "/s (InstallShield)";
             // 
             // mnuNsis
             // 
-            this.mnuNsis.Index = 3;
+            this.mnuNsis.Name = "mnuNsis";
+            this.mnuNsis.Size = new System.Drawing.Size(187, 22);
             this.mnuNsis.Tag = "/S";
             this.mnuNsis.Text = "/S (NSIS)";
             // 
             // mnuVerySilent
             // 
-            this.mnuVerySilent.Index = 4;
+            this.mnuVerySilent.Name = "mnuVerySilent";
+            this.mnuVerySilent.Size = new System.Drawing.Size(187, 22);
             this.mnuVerySilent.Tag = "/verysilent";
             this.mnuVerySilent.Text = "/verysilent (InnoSetup)";
             // 
@@ -273,6 +279,7 @@ namespace Ketarin.Forms
             this.Controls.SetChildIndex(this.bBrowse, 0);
             this.Controls.SetChildIndex(this.chkWaitUntilExit, 0);
             ((System.ComponentModel.ISupportInitialize)(this.olvEnvironmentVariables)).EndInit();
+            this.argumentsMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -285,12 +292,12 @@ namespace Ketarin.Forms
         private Label lblParameters;
         private VariableTextBox txtParameters;
         private SplitButton bInsertArgument;
-        private ContextMenu argumentsMenu;
-        private MenuItem mnuVerySilent;
-        private MenuItem mnuQN;
-        private MenuItem mnuS;
-        private MenuItem mnuPassive;
-        private MenuItem mnuNsis;
+        private System.Windows.Forms.ContextMenuStrip argumentsMenu;
+        private System.Windows.Forms.ToolStripMenuItem mnuVerySilent;
+        private System.Windows.Forms.ToolStripMenuItem mnuQN;
+        private System.Windows.Forms.ToolStripMenuItem mnuS;
+        private System.Windows.Forms.ToolStripMenuItem mnuPassive;
+        private System.Windows.Forms.ToolStripMenuItem mnuNsis;
         private WebLink lnkSilentSetups;
         private ObjectListView olvEnvironmentVariables;
         private OLVColumn colName;

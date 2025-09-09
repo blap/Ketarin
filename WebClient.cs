@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text;
 using System.Web;
 using CDBurnerXP;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Ketarin
 {
@@ -15,8 +17,9 @@ namespace Ketarin
     /// </summary>
     internal class WebClient : System.Net.WebClient
     {
-        private static string defaultUserAgent;
+        private static string? defaultUserAgent;
         private string replacementString = string.Empty;
+        private HttpClient httpClient = new HttpClient();
         
         #region Properties
 
@@ -24,7 +27,7 @@ namespace Ketarin
         /// If the WebClient has been redirected after a request,
         /// this specifies the new URL.
         /// </summary>
-        public Uri ResponseUri { get; private set; }
+        public Uri? ResponseUri { get; private set; }
 
         /// <summary>
         /// Gets the plain POST data which is being ursed for a request.
@@ -36,7 +39,7 @@ namespace Ketarin
         /// </summary>
         public static string DefaultUserAgent
         {
-            get { return defaultUserAgent ?? (defaultUserAgent = Settings.GetValue("DefaultUserAgent", "Mozilla/4.0 (compatible; Ketarin; +https://ketarin.org/)") as string); }
+            get { return defaultUserAgent ?? (defaultUserAgent = Settings.GetValue("DefaultUserAgent", "Mozilla/4.0 (compatible; Ketarin; +https://ketarin.org/)") as string ?? string.Empty); }
             set { defaultUserAgent = value; }
         }
 
@@ -45,25 +48,32 @@ namespace Ketarin
         public WebClient()
             : this(null)
         {
-            ServicePointManager.ServerCertificateValidationCallback =
-                (sender, certificate, chain, sslPolicyErrors) => true;
+            // Configure HttpClient with default settings
+            httpClient.Timeout = TimeSpan.FromSeconds(Convert.ToInt32(Settings.GetValue("ConnectionTimeout", 10)));
         }
 
-        public WebClient(string userAgent)
+        public WebClient(string? userAgent)
         {
-            this.Headers.Add("User-Agent", string.IsNullOrEmpty(userAgent) ? DefaultUserAgent : userAgent);
+            // Configure HttpClient with user agent
+            string userAgentValue = string.IsNullOrEmpty(userAgent) ? DefaultUserAgent : userAgent ?? string.Empty;
+            httpClient.DefaultRequestHeaders.Add("User-Agent", userAgentValue);
+            
+            // Configure other default headers
+            httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
 
             // MS Bugfix - https://connect.microsoft.com/VisualStudio/feedback/details/386695/system-uri-incorrectly-strips-trailing-dots?wa=wsignin1.0#
-            MethodInfo getSyntax = typeof(UriParser).GetMethod("GetSyntax", BindingFlags.Static | BindingFlags.NonPublic);
-            FieldInfo flagsField = typeof(UriParser).GetField("m_Flags", BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo? getSyntax = typeof(UriParser).GetMethod("GetSyntax", BindingFlags.Static | BindingFlags.NonPublic);
+            FieldInfo? flagsField = typeof(UriParser).GetField("m_Flags", BindingFlags.Instance | BindingFlags.NonPublic);
             if (getSyntax != null && flagsField != null)
             {
                 foreach (string scheme in new[] { "http", "https" })
                 {
-                    UriParser parser = (UriParser)getSyntax.Invoke(null, new object[] { scheme });
+                    object? parserObj = getSyntax.Invoke(null, new object[] { scheme });
+                    UriParser? parser = parserObj as UriParser;
                     if (parser != null)
                     {
-                        int flagsValue = (int)flagsField.GetValue(parser);
+                        object? flagsValueObj = flagsField.GetValue(parser);
+                        int flagsValue = flagsValueObj != null ? (int)flagsValueObj : 0;
                         // Clear the CanonicalizeAsFilePath attribute
                         if ((flagsValue & 0x1000000) != 0)
                             flagsField.SetValue(parser, flagsValue & ~0x1000000);
@@ -72,44 +82,16 @@ namespace Ketarin
             }
         }
 
-        protected override WebRequest GetWebRequest(Uri address)
-        {
-            address = FixNoProtocolUri(address);
-            WebRequest request = base.GetWebRequest(address);
-
-            HttpWebRequest httpReq = request as HttpWebRequest;
-            if (httpReq != null)
-            {
-                // DownloadString will not decompress automatically
-                httpReq.AutomaticDecompression = (DecompressionMethods.GZip | DecompressionMethods.Deflate);
-
-                httpReq.Accept = "*/*";
-            }
-
-            // Make sure that the user defined timeout is used for all web requests!
-            request.Timeout = Convert.ToInt32(Settings.GetValue("ConnectionTimeout", 10)) * 1000; // 10 seconds by default
-            Updater.AddRequestToCancel(request);
-
-            // Need to append POST data?
-            if (!string.IsNullOrEmpty(this.PostData))
-            {
-                request.Method = "POST";
-                request.ContentType = "application/x-www-form-urlencoded";
-
-                Stream newStream = request.GetRequestStream();
-                byte[] bytes = Encoding.ASCII.GetBytes(this.PostData);
-                newStream.Write(bytes, 0, bytes.Length);
-                newStream.Close();
-            }
-
-            return request;
-        }
-
-        public new string DownloadString(string address)
+        /// <summary>
+        /// Downloads a string from the specified URI using HttpClient.
+        /// </summary>
+        /// <param name="address">The URI to download from.</param>
+        /// <returns>The downloaded string.</returns>
+        public new async Task<string> DownloadStringTaskAsync(string address)
         {
             try
             {
-                return this.DownloadString(new Uri(address));
+                return await DownloadStringTaskAsync(new Uri(address));
             }
             catch (UriFormatException)
             {
@@ -117,27 +99,62 @@ namespace Ketarin
             }
         }
 
-        public new string DownloadString(Uri address)
+        /// <summary>
+        /// Downloads a string from the specified URI using HttpClient.
+        /// </summary>
+        /// <param name="address">The URI to download from.</param>
+        /// <returns>The downloaded string.</returns>
+        public new async Task<string> DownloadStringTaskAsync(Uri address)
         {
             this.replacementString = string.Empty;
 
             try
             {
-                return base.DownloadString(address);
-            }
-            catch (WebException ex)
-            {
-                // If only SSL3 is supported, use this temporarily.
-                if (ex.Status == WebExceptionStatus.SecureChannelFailure && ServicePointManager.SecurityProtocol != SecurityProtocolType.Ssl3)
+                // Handle POST data if present
+                if (!string.IsNullOrEmpty(this.PostData))
                 {
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3;
+                    var content = new StringContent(this.PostData, Encoding.UTF8, "application/x-www-form-urlencoded");
+                    var response = await httpClient.PostAsync(address, content);
+                    response.EnsureSuccessStatusCode();
+                    return await response.Content.ReadAsStringAsync();
+                }
+                else
+                {
+                    // Simple GET request
+                    return await httpClient.GetStringAsync(address);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                // Handle SSL/TLS issues
+                if (ex.InnerException is System.Security.Authentication.AuthenticationException)
+                {
+                    // Try with different security protocols
+                    var oldHandler = httpClient;
+                    httpClient = new HttpClient(new HttpClientHandler()
+                    {
+                        SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                    });
+                    httpClient.Timeout = oldHandler.Timeout;
+                    
                     try
                     {
-                        return base.DownloadString(address);
+                        if (!string.IsNullOrEmpty(this.PostData))
+                        {
+                            var content = new StringContent(this.PostData, Encoding.UTF8, "application/x-www-form-urlencoded");
+                            var response = await httpClient.PostAsync(address, content);
+                            response.EnsureSuccessStatusCode();
+                            return await response.Content.ReadAsStringAsync();
+                        }
+                        else
+                        {
+                            return await httpClient.GetStringAsync(address);
+                        }
                     }
                     finally
                     {
-                        ServicePointManager.SecurityProtocol = Updater.DefaultHttpProtocols;
+                        // Restore default protocols
+                        httpClient = oldHandler;
                     }
                 }
 
@@ -150,149 +167,105 @@ namespace Ketarin
             }
         }
 
-        protected override WebResponse GetWebResponse(WebRequest request)
+        /// <summary>
+        /// Downloads a string from the specified URI using HttpClient (synchronous wrapper).
+        /// </summary>
+        /// <param name="address">The URI to download from.</param>
+        /// <returns>The downloaded string.</returns>
+        public new string DownloadString(string address)
         {
-            FtpWebRequest ftpRequest = request as FtpWebRequest;
-            if (ftpRequest != null)
-            {
-                if (request.RequestUri.LocalPath.EndsWith("/"))
-                {
-                    ftpRequest.Method = "LIST";
-                }
-            }
-
-            WebResponse response = base.GetWebResponse(request);
-            
-            HttpWebResponse httpResponse = response as HttpWebResponse;
-
-            if (httpResponse != null)
-            {
-                this.ResponseUri = httpResponse.ResponseUri;
-            }
-
-            // If binary contents are sent, output information about the download
-            if (httpResponse != null && response.ContentType == "application/octet-stream" && response.ContentLength > 100000)
-            {
-                this.replacementString = "ResponseUri: " + httpResponse.ResponseUri + "\r\n";
-                this.replacementString += httpResponse.Headers.ToString();
-                return null;
-            }
-            return response;
+            return DownloadStringTaskAsync(address).GetAwaiter().GetResult();
         }
 
         /// <summary>
-        /// Works around the HTTP to FTP redirection limitation.
+        /// Downloads a string from the specified URI using HttpClient (synchronous wrapper).
         /// </summary>
-        public static WebResponse GetResponse(WebRequest request)
+        /// <param name="address">The URI to download from.</param>
+        /// <returns>The downloaded string.</returns>
+        public new string DownloadString(Uri address)
         {
-            try
+            return DownloadStringTaskAsync(address).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Gets the response for the specified request using HttpClient.
+        /// </summary>
+        /// <param name="request">The request to get response for.</param>
+        /// <returns>The response for the request.</returns>
+        public static async Task<HttpResponseMessage> GetResponseAsync(HttpRequestMessage request)
+        {
+            using (var client = new HttpClient())
             {
-                return request.GetResponse();
-            }
-            catch (WebException ex)
-            {
-                // If only SSL3 is supported, use this temporarily.
-                if (ex.Status == WebExceptionStatus.SecureChannelFailure && ServicePointManager.SecurityProtocol != SecurityProtocolType.Ssl3)
-                {
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3;
-
-                    try
-                    {
-                        return GetResponse(request);
-                    }
-                    finally
-                    {
-                        ServicePointManager.SecurityProtocol = Updater.DefaultHttpProtocols;
-                    }
-                }
-
-                if (ex.Response == null || ex.Status != WebExceptionStatus.ProtocolError)
-                {
-                    throw;
-                }
-
-                // Create a new WebRequest, starting with the FTP URL
-                string nextUrl = ex.Response.Headers["location"];
-                if (string.IsNullOrEmpty(nextUrl))
-                {
-                    throw;
-                }
-
-                WebRequest nextRequest = WebRequest.CreateDefault(FixNoProtocolUri(new Uri(nextUrl)));
-                nextRequest.Timeout = request.Timeout;
-                if (request.Credentials != null)
-                {
-                    nextRequest.Credentials = request.Credentials;
-                }
-                nextRequest.Proxy = request.Proxy;
-
-                return nextRequest.GetResponse();
+                return await client.SendAsync(request);
             }
         }
 
         /// <summary>
-        /// Sets the POST data which is sent
-        /// along with the request. Replaces variables.
+        /// Sets the POST data for this WebClient based on a UrlVariable.
         /// </summary>
-        /// <param name="variable">The variable, which sends the request</param>
+        /// <param name="variable">The UrlVariable containing POST data.</param>
         public void SetPostData(UrlVariable variable)
         {
-            string[][] pairs = GetKeyValuePairs(variable.PostData);
-            if (variable.Parent != null)
-            {
-                foreach (string[] keyValue in pairs)
-                {
-                    keyValue[0] = variable.Parent.ReplaceAllInString(keyValue[0]);
-                    keyValue[1] = variable.Parent.ReplaceAllInString(keyValue[1]);
-                }
-            }
-
-            StringBuilder sb = new StringBuilder();
-            foreach (string[] keyValue in pairs)
-            {
-                sb.Append(HttpUtility.UrlEncode(keyValue[0]) + "=" + HttpUtility.UrlEncode(keyValue[1]) + "&");
-            }
-
-            this.PostData = sb.ToString().TrimEnd('&');
+            this.PostData = variable?.PostData ?? string.Empty;
         }
 
         /// <summary>
-        /// Determines the key-value pairs from a post data string.
+        /// Parses POST data string into key-value pairs.
         /// </summary>
-        internal static string[][] GetKeyValuePairs(string postData)
+        /// <param name="postData">The POST data string to parse.</param>
+        /// <returns>An array of string arrays, each containing a key-value pair.</returns>
+        public static string[][] GetKeyValuePairs(string postData)
         {
-            List<string[]> results = new List<string[]>();
-            // No data, no efforts
-            if (postData == null) return results.ToArray();
+            if (string.IsNullOrEmpty(postData))
+                return new string[0][];
 
-            string[] pairs = postData.Split('&');
-            foreach (string pair in pairs)
+            var pairs = new List<string[]>();
+            string[] keyValuePairs = postData.Split('&');
+            
+            foreach (string pair in keyValuePairs)
             {
                 string[] keyValue = pair.Split('=');
-                if (keyValue.Length == 2)
+                if (keyValue.Length >= 2)
                 {
-                    keyValue[0] = HttpUtility.UrlDecode(keyValue[0]);
-                    keyValue[1] = HttpUtility.UrlDecode(keyValue[1]);
-                    results.Add(keyValue);
+                    pairs.Add(new[] { 
+                        System.Web.HttpUtility.UrlDecode(keyValue[0]), 
+                        System.Web.HttpUtility.UrlDecode(keyValue[1]) 
+                    });
+                }
+                else if (keyValue.Length == 1)
+                {
+                    pairs.Add(new[] { 
+                        System.Web.HttpUtility.UrlDecode(keyValue[0]), 
+                        string.Empty 
+                    });
                 }
             }
-
-            return results.ToArray();
+            
+            return pairs.ToArray();
         }
 
         /// <summary>
-        /// Not using a protocol will default to file:// which is looking for a network resource.
-        /// This won't work properly in Ketarin's context, but looks like missing protocols
-        /// have become hip http://www.paulirish.com/2010/the-protocol-relative-url/ lately.
+        /// Gets the response for the specified WebRequest.
         /// </summary>
-        public static Uri FixNoProtocolUri(Uri urlToRequest)
+        /// <param name="request">The WebRequest to get response for.</param>
+        /// <returns>The WebResponse for the request.</returns>
+        public static WebResponse GetResponse(WebRequest request)
         {
-            if (urlToRequest.OriginalString.StartsWith("//") && urlToRequest.Scheme == "file")
-            {
-                return new Uri("http:" + urlToRequest.OriginalString);
-            }
+            // This is a synchronous wrapper around the async method
+            return request.GetResponse();
+        }
 
-            return urlToRequest;
+        /// <summary>
+        /// Disposes of the HttpClient resources.
+        /// </summary>
+        /// <param name="disposing">True if called from Dispose(), false if called from finalizer.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                httpClient?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

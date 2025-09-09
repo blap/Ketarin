@@ -20,12 +20,12 @@ namespace Ketarin.Forms
         /// This event is fired, when the context menu is being created.
         /// At this point, changes can still be applied to the menu structure.
         /// </summary>
-        public event EventHandler ContextMenuCreating;
+        public event EventHandler? ContextMenuCreating;
 
         #region WinAPI
 
         [DllImport("user32.dll", SetLastError = true)]
-        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        static extern IntPtr FindWindow(string lpClassName, string? lpWindowName);
         [DllImport("user32.dll")]
         static extern bool IsMenu(IntPtr hMenu);
 
@@ -98,7 +98,7 @@ namespace Ketarin.Forms
 
             if (ContextMenuCreating != null)
             {
-                ContextMenuCreating(this, null);
+                ContextMenuCreating(this, EventArgs.Empty);
             }
 
             // Find menu window

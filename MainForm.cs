@@ -38,7 +38,7 @@ namespace Ketarin
 {
     public partial class MainForm : PersistentForm
     {
-        private ApplicationJob[] m_Jobs;
+        private ApplicationJob[] m_Jobs = new ApplicationJob[0];
         private readonly Updater m_Updater = new Updater();
         // For caching purposes
         private Dictionary<string, string> customColumns = new Dictionary<string, string>();
@@ -88,7 +88,7 @@ namespace Ketarin
         {
             InitializeComponent();
             olvJobs.Initialize();
-            olvJobs.ContextMenu = cmnuJobs;
+            olvJobs.ContextMenuStrip = cmnuJobs;
 
             colName.AspectGetter = x => ((ApplicationJob) x).Name;
             colName.GroupKeyGetter = delegate(object x) {
@@ -150,9 +150,13 @@ namespace Ketarin
                 return (int)m_Updater.GetStatus(job);
             };
 
-            colStatus.AspectGetter = x => this.m_Updater.GetStatus(x as ApplicationJob);
+            colStatus.AspectGetter = x => {
+                ApplicationJob? job = x as ApplicationJob;
+                return job != null ? this.m_Updater.GetStatus(job) : Updater.Status.Idle;
+            };
             colStatus.AspectToStringConverter = delegate(object x)
             {
+                if (x == null) return string.Empty;
                 switch ((Updater.Status)x)
                 {
                     case Updater.Status.Downloading: return "Downloading";
@@ -166,12 +170,18 @@ namespace Ketarin
             };
 
             colTarget.AspectGetter = delegate(object x) {
-                ApplicationJob job = x as ApplicationJob;
-                return job.Variables.ReplaceAllInString(job.TargetPath, DateTime.MinValue, null, true);
+                ApplicationJob? job = x as ApplicationJob;
+                return job?.Variables.ReplaceAllInString(job.TargetPath, DateTime.MinValue, null, true) ?? string.Empty;
             };
-            colTarget.GroupKeyGetter = x => ((ApplicationJob)x).TargetPath.ToLower();
+            colTarget.GroupKeyGetter = x => {
+                ApplicationJob? job = x as ApplicationJob;
+                return job?.TargetPath?.ToLower() ?? string.Empty;
+            };
 
-            colLastUpdate.AspectGetter = x => ((ApplicationJob)x).LastUpdated;
+            colLastUpdate.AspectGetter = x => {
+                ApplicationJob job = (ApplicationJob)x;
+                return job.LastUpdated ?? DateTime.MinValue;
+            };
             colLastUpdate.AspectToStringFormat = "{0:g}";
             colLastUpdate.GroupKeyGetter = delegate(object x)
             {
@@ -185,7 +195,10 @@ namespace Ketarin
                 return ((DateTime)x).ToString("d");
             };
 
-            colProgress.AspectGetter = x => this.m_Updater.GetProgress(x as ApplicationJob);
+            colProgress.AspectGetter = x => {
+                ApplicationJob? job = x as ApplicationJob;
+                return job != null ? this.m_Updater.GetProgress(job) : (short)0;
+            };
             colProgress.Renderer = new ApplicationJobsListView.ProgressRenderer(m_Updater, 0, 100);
 
 
@@ -194,9 +207,12 @@ namespace Ketarin
             m_Updater.UpdateCompleted += this.m_Updater_UpdateCompleted;
             m_Updater.UpdatesFound += this.m_Updater_UpdatesFound;
 
-            LogDialog.Instance.VisibleChanged += delegate {
-                mnuLog.Checked = LogDialog.Instance.Visible;
-            };
+            if (LogDialog.Instance != null)
+            {
+                LogDialog.Instance.VisibleChanged += delegate {
+                    mnuLog.Checked = LogDialog.Instance.Visible;
+                };
+            }
 
             this.olvJobs.FilterChanged += this.olvJobs_FilterChanged;
 
@@ -211,12 +227,12 @@ namespace Ketarin
 
         #region Updater events
 
-        private void m_Updater_UpdateCompleted(object sender, EventArgs e)
+        private void m_Updater_UpdateCompleted(object? sender, EventArgs e)
         {
-            this.BeginInvoke((MethodInvoker)delegate
+            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate
             {
                 bRun.Text = "&Update all";
-                bRun.SplitMenu = cmuRun;
+                bRun.SplitMenuStrip = cmuRun;
                 bRun.Image = Resources.Restart;
                 cmnuImportFile.Enabled = true;
                 mnuExportSelected.Enabled = true;
@@ -243,9 +259,9 @@ namespace Ketarin
             ntiTrayIcon.ShowBalloonTip(5000, "Done", "Ketarin has finished the update check.", ToolTipIcon.Info);
         }
 
-        private void m_Updater_StatusChanged(object sender, Updater.JobStatusChangedEventArgs e)
+        private void m_Updater_StatusChanged(object? sender, Updater.JobStatusChangedEventArgs e)
         {
-            this.BeginInvoke((MethodInvoker)delegate
+            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate
             {
                 olvJobs.RefreshObject(e.ApplicationJob);
                 int index = olvJobs.IndexOf(e.ApplicationJob);
@@ -266,14 +282,14 @@ namespace Ketarin
             });
         }
 
-        private void m_Updater_ProgressChanged(object sender, Updater.JobProgressChangedEventArgs e)
+        private void m_Updater_ProgressChanged(object? sender, Updater.JobProgressChangedEventArgs e)
         {
             olvJobs.RefreshObject(e.ApplicationJob);
         }
 
-        private void m_Updater_UpdatesFound(object sender, GenericEventArgs<string[]> e)
+        private void m_Updater_UpdatesFound(object? sender, GenericEventArgs<string[]> e)
         {
-            this.BeginInvoke((MethodInvoker)delegate
+            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate
             {
                 List<string> appNames = new List<string>();
                 foreach (string xml in e.Value)
@@ -328,7 +344,7 @@ namespace Ketarin
 
         private static void CheckDragDrop(DragEventArgs drgevent)
         {
-            if (drgevent.Data.GetDataPresent(DataFormats.FileDrop))
+            if (drgevent.Data != null && drgevent.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 drgevent.Effect = DragDropEffects.Copy;
             }
@@ -338,8 +354,9 @@ namespace Ketarin
         {
             base.OnDragDrop(drgevent);
 
-            string[] files = drgevent.Data.GetData(DataFormats.FileDrop) as string[];
-            if (files != null && files.Length > 0)
+            // Line 351: Add null check for drgevent.Data before calling GetData
+            string[]? files = drgevent.Data != null ? drgevent.Data.GetData(DataFormats.FileDrop) as string[] : null;
+            if (drgevent.Data != null && files != null && files.Length > 0)
             {
                 foreach (string file in files)
                 {
@@ -357,7 +374,7 @@ namespace Ketarin
 
             if (this.WindowState == FormWindowState.Minimized)
             {
-                if (Convert.ToBoolean(Settings.GetValue("MinimizeToTray", false)))
+                if (Convert.ToBoolean(Settings.GetValue("MinimizeToTray", false) ?? false))
                 {
                     ntiTrayIcon.Visible = true;
                     this.Hide();
@@ -383,15 +400,15 @@ namespace Ketarin
 
             if (Conversion.ToBoolean(Settings.GetValue("Ketarin", "ShowStatusBar", false)))
             {
-                mnuShowStatusBar.PerformClick();
+                mnuShowStatusBar?.PerformClick();
             }
 
             UpdateList();
             UpdateNumByStatus();
 
-            if (Convert.ToBoolean(Settings.GetValue("Ketarin", "ShowLog", false)))
+            if (Convert.ToBoolean(Settings.GetValue("Ketarin", "ShowLog", false) ?? false))
             {
-                mnuLog.PerformClick();
+                mnuLog?.PerformClick();
             }
 
             if ((bool)Settings.GetValue("UpdateAtStartup", false))
@@ -431,13 +448,14 @@ namespace Ketarin
                 this.olvJobs.AllColumns.Add(newCol);
                 newCol.AspectGetter = delegate(object x)
                 {
-                    if (string.IsNullOrEmpty(newCol.Tag as string)) return null;
+                    if (string.IsNullOrEmpty(newCol.Tag as string)) return string.Empty;
 
                     bool forceEval = newCol.Name.StartsWith("!");
                     string varFind = "{" + ((string)newCol.Tag).TrimStart('{').TrimEnd('}') + "}";
 
-                    string value = ((ApplicationJob)x).Variables.ReplaceAllInString(varFind, DateTime.MinValue, null, !forceEval);
-                    return varFind == value ? string.Empty : value;
+                    ApplicationJob job = (ApplicationJob)x;
+                    string value = job.Variables.ReplaceAllInString(varFind, DateTime.MinValue, (string?)null, !forceEval);
+                    return varFind == value ? string.Empty : value ?? string.Empty;
                 };
             }
 
@@ -446,7 +464,7 @@ namespace Ketarin
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
 
             // Check for user defined hotkeys
             foreach (Hotkey hotkey in this.hotkeys)
@@ -471,9 +489,9 @@ namespace Ketarin
                     return true;
             }
 
-            foreach (MenuItem item in cmnuJobs.MenuItems)
+            foreach (ToolStripMenuItem item in cmnuJobs.Items)
             {
-                if ((int)item.Shortcut == (int)keyData && item.Enabled)
+                if (item.ShortcutKeys == keyData && item.Enabled)
                 {
                     item.PerformClick();
                     return true;
@@ -498,7 +516,7 @@ namespace Ketarin
             }
             else
             {
-                LogDialog.Instance.Close();
+                LogDialog.Instance?.Close();
             }
         }
 
@@ -566,18 +584,26 @@ namespace Ketarin
                 {
                     foreach (ApplicationJob app in dialog.ImportedApplications)
                     {
-                        ApplicationJob existing = Array.Find(m_Jobs, x => x.Guid == app.Guid);
+                        ApplicationJob? existing = Array.Find(m_Jobs, x => x.Guid == app.Guid);
                         if (existing == null)
                         {
                             existing = app;
-                            List<ApplicationJob> newJobs = new List<ApplicationJob>(m_Jobs) {existing};
+                            List<ApplicationJob> newJobs = new List<ApplicationJob>(m_Jobs) {existing!};
                             m_Jobs = newJobs.ToArray();
                             olvJobs.AddObject(existing);
                             UpdateStatusbar();
                         }
 
                         olvJobs.SelectedObject = existing;
-                        olvJobs.SelectedItem.EnsureVisible();
+                        // Line 591: Add null check for SelectedItem before casting
+                        if (olvJobs.SelectedItem != null)
+                        {
+                            ListViewItem? selectedItem = olvJobs.SelectedItem as ListViewItem;
+                            if (selectedItem != null)
+                            {
+                                selectedItem.EnsureVisible();
+                            }
+                        }
                     }
                 }
             }
@@ -657,14 +683,22 @@ namespace Ketarin
             if (m_Updater.IsBusy) return;
 
             List<ApplicationJob> jobs = new List<ApplicationJob>();
-            OLVListItem startItem = null;
+            object? startItem = null;
 
             do
             {
-                startItem = olvJobs.GetNextItem(startItem) as OLVListItem;
+                startItem = olvJobs.GetNextItem(startItem);
                 if (startItem != null)
                 {
-                    jobs.Add(startItem.RowObject as ApplicationJob);
+                    OLVListItem? listItem = startItem as OLVListItem;
+                    if (listItem != null)
+                    {
+                        ApplicationJob? job = listItem.RowObject as ApplicationJob;
+                        if (job != null)
+                        {
+                            jobs.Add(job);
+                        }
+                    }
                 }
             } while (startItem != null);
 
@@ -676,7 +710,7 @@ namespace Ketarin
             if (m_Updater.IsBusy) return;
 
             bRun.Text = "Cancel";
-            bRun.SplitMenu = null;
+            bRun.SplitMenuStrip = null;
             bRun.Image = null;
             bInstall.Enabled = false;
             cmnuImportFile.Enabled = false;
@@ -693,7 +727,7 @@ namespace Ketarin
 
         private void cmnuOpenFile_Click(object sender, EventArgs e)
         {
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
             OpenFile(job);
         }
 
@@ -701,8 +735,11 @@ namespace Ketarin
         {
             try
             {
-                ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
-                Shell32.ShowFileProperties(job.CurrentLocation);
+                ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
+                if (job != null)
+                {
+                    Shell32.ShowFileProperties(job.CurrentLocation);
+                }
             }
             catch (Exception)
             {
@@ -712,8 +749,11 @@ namespace Ketarin
 
         private void cmnuOpenFolder_Click(object sender, EventArgs e)
         {
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
-            OpenDownloadFolder(job);
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
+            if (job != null)
+            {
+                OpenDownloadFolder(job);
+            }
         }
 
         private void mnuInvert_Click(object sender, EventArgs e)
@@ -762,9 +802,11 @@ namespace Ketarin
 
         private void cmnuEdit_Click(object sender, EventArgs e)
         {
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
-
-            EditJob(job);
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
+            if (job != null)
+            {
+                EditJob(job);
+            }
         }
 
         private void cmnuDelete_Click(object sender, EventArgs e)
@@ -778,7 +820,7 @@ namespace Ketarin
 
         private void cmnuJobs_Popup(object sender, EventArgs e)
         {
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
             cmnuEdit.Enabled = (job != null);
             cmnuDelete.Enabled = (olvJobs.SelectedIndices.Count > 0 && !m_Updater.IsBusy);
             cmnuUpdate.Enabled = (!m_Updater.IsBusy);
@@ -795,9 +837,10 @@ namespace Ketarin
             cmnuRunPostDownload.Enabled = job != null && !string.IsNullOrEmpty(job.ExecuteCommand);
         }
 
-        private void cmnuRename_Click(object sender, EventArgs e)
+        private void cmnuRename_Click(object sender, EventArgs e)            
         {            
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
+            if (job == null) return;
 
             if (string.IsNullOrEmpty(job.CurrentLocation)) return;
 
@@ -822,7 +865,7 @@ namespace Ketarin
 
         private void cmnuRunPostDownload_Click(object sender, EventArgs e)
         {
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
             if (job != null)
             {
                 job.ExecutePostUpdateCommands();
@@ -861,26 +904,29 @@ namespace Ketarin
                 ApplicationJob[] jobs;
                 try
                 {
-                    jobs = ApplicationJob.LoadFromXml(SafeClipboard.GetData(DataFormats.Text) as string);
+                    jobs = ApplicationJob.LoadFromXml(SafeClipboard.GetData(DataFormats.Text) as string ?? string.Empty);
                 }
                 catch (Exception)
                 {
-                    jobs = new[] { ApplicationJob.ImportFromTemplateOrXml(this, SafeClipboard.GetData(DataFormats.Text) as string, m_Jobs, true) };
+                    jobs = new[] { ApplicationJob.ImportFromTemplateOrXml(this, SafeClipboard.GetData(DataFormats.Text) as string ?? string.Empty, m_Jobs, true) };
                 }
                 if (jobs == null || jobs.Length == 0) return;
 
                 foreach (ApplicationJob job in jobs)
                 {
                     job.Guid = Guid.NewGuid();
-                    job.PreviousLocation = null;
+                    job.PreviousLocation = string.Empty;
                     job.CanBeShared = true;
                     job.Save();
                     olvJobs.AddObject(job);
                 }
 
                 // Go to last job
-                olvJobs.EnsureVisible(olvJobs.IndexOf(jobs[jobs.Length - 1]));
-                olvJobs.SelectedObject = jobs[jobs.Length - 1];
+                if (jobs.Length > 0)
+                {
+                    olvJobs.EnsureVisible(olvJobs.IndexOf(jobs[jobs.Length - 1]));
+                    olvJobs.SelectedObject = jobs[jobs.Length - 1];
+                }
                 UpdateStatusbar();
             }
             catch (Exception) { }
@@ -896,7 +942,7 @@ namespace Ketarin
             cmnuJobs_Popup(sender, e);
         }
 
-        private void olvJobs_FilterChanged(object sender, EventArgs e)
+        private void olvJobs_FilterChanged(object? sender, EventArgs e)
         {
             bAddApplication.Enabled = olvJobs.IsDefaultFilter;
             mnuNew.Enabled = olvJobs.IsDefaultFilter;
@@ -910,7 +956,7 @@ namespace Ketarin
 
         private void olvJobs_DoubleClick(object sender, EventArgs e)
         {
-            ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
+            ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
 
             // Check for custom hotkeys first
             foreach (Hotkey hotkey in this.hotkeys)
@@ -933,7 +979,7 @@ namespace Ketarin
             else
             {
                 bool openWebsite = (bool)Settings.GetValue("OpenWebsiteOnDoubleClick", false);
-                if (openWebsite && !string.IsNullOrEmpty(job.WebsiteUrl))
+                if (openWebsite && job != null && !string.IsNullOrEmpty(job.WebsiteUrl))
                 {
                     OpenWebsite(job);
                 }
@@ -949,8 +995,11 @@ namespace Ketarin
             switch (e.KeyData)
             {
                 case Keys.Enter:
-                    ApplicationJob job = olvJobs.SelectedObject as ApplicationJob;
-                    EditJob(job);
+                    ApplicationJob? job = olvJobs.SelectedObject as ApplicationJob;
+                    if (job != null)
+                    {
+                        EditJob(job);
+                    }
                     break;
 
                 case Keys.Control | Keys.D:
@@ -978,11 +1027,14 @@ namespace Ketarin
         /// <summary>
         /// Opens the website of a specified application.
         /// </summary>
-        private static void OpenWebsite(ApplicationJob job)
+        private static void OpenWebsite(ApplicationJob? job)
         {
             try
             {
-                Process.Start(job.ExpandedWebsiteUrl);
+                if (job != null && !string.IsNullOrEmpty(job.ExpandedWebsiteUrl))
+                {
+                    Process.Start(job.ExpandedWebsiteUrl ?? string.Empty);
+                }
             }
             catch (Exception)
             {
@@ -992,7 +1044,7 @@ namespace Ketarin
         /// <summary>
         /// Edits an application job. It is possible to edit multiple jobs at the same time.
         /// </summary>
-        private void EditJob(ApplicationJob job)
+        private void EditJob(ApplicationJob? job)
         {
             if (job == null) return;
 
@@ -1020,11 +1072,14 @@ namespace Ketarin
             }
         }
 
-        private static void OpenFile(ApplicationJob job)
+        private static void OpenFile(ApplicationJob? job)
         {
             try
             {
-                Process.Start(job.CurrentLocation);
+                if (job != null && !string.IsNullOrEmpty(job.CurrentLocation))
+                {
+                    Process.Start(job.CurrentLocation ?? string.Empty);
+                }
             }
             catch (Exception)
             {
@@ -1032,11 +1087,11 @@ namespace Ketarin
             }
         }
 
-        private static void OpenDownloadFolder(ApplicationJob job)
+        private static void OpenDownloadFolder(ApplicationJob? job)
         {
             try
             {
-                if (job != null)
+                if (job != null && !string.IsNullOrEmpty(job.CurrentLocation))
                 {
                     if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                     {
@@ -1044,7 +1099,11 @@ namespace Ketarin
                     }
                     else
                     {
-                        Process.Start(Path.GetDirectoryName(job.CurrentLocation));
+                        string? directory = Path.GetDirectoryName(job.CurrentLocation);
+                        if (!string.IsNullOrEmpty(directory))
+                        {
+                            Process.Start(directory);
+                        }
                     }
                 }
             }
@@ -1063,7 +1122,7 @@ namespace Ketarin
             }
         }
 
-        private void ExecuteHotkey(Hotkey hotkey, ApplicationJob job)
+        private void ExecuteHotkey(Hotkey hotkey, ApplicationJob? job)
         {
             ApplicationJob[] jobs = olvJobs.SelectedApplications;
 
@@ -1280,16 +1339,16 @@ namespace Ketarin
 
         private void mnuLog_Click(object sender, EventArgs e)
         {
-            if (LogDialog.Instance.Visible)
+            if (LogDialog.Instance?.Visible == true)
             {
                 LogDialog.Instance.Hide();
             }
             else
             {
-                LogDialog.Instance.Show(this);
+                LogDialog.Instance?.Show(this);
             }
 
-            mnuLog.Checked = LogDialog.Instance.Visible;
+            mnuLog.Checked = LogDialog.Instance?.Visible == true;
         }
 
         private void mnuTutorial_Click(object sender, EventArgs e)
@@ -1314,6 +1373,11 @@ namespace Ketarin
             mnuAutoScroll.Checked = !mnuAutoScroll.Checked;
         }
 
+        private void mnuNew_Click(object sender, EventArgs e)
+        {
+            cmnuAdd.PerformClick();
+        }
+
         #endregion
 
         #region Tray Icon Menu
@@ -1328,6 +1392,118 @@ namespace Ketarin
         private void cmnuExit_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        #endregion
+
+        #region Missing Event Handlers
+
+        private void olvJobs_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data != null)
+            {
+                object? data = e.Data.GetData(DataFormats.FileDrop);
+                string[]? files = data as string[];
+                if (files != null && files.Length > 0)
+                {
+                    foreach (string file in files)
+                    {
+                        ImportFromFile(file);
+                    }
+                    UpdateList();
+                }
+            }
+        }
+
+        private void olvJobs_DragEnter(object sender, DragEventArgs e)
+        {
+            // Line 1403: Add null check for e.Data
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+        }
+
+        private void ntiTrayIcon_DoubleClick(object sender, EventArgs e)
+        {
+            if (Visible)
+            {
+                WindowState = FormWindowState.Minimized;
+            }
+            else
+            {
+                cmnuShow.PerformClick();
+            }
+        }
+
+        private void MainForm_Closing(object sender, CancelEventArgs e)
+        {
+            Settings.SetValue("Ketarin", "ShowGroups", olvJobs.ShowGroups);
+            Settings.SetValue("Ketarin", "ShowStatusBar", statusBar.Visible);
+            Settings.SetValue("Ketarin", "ShowLog", mnuLog.Checked);
+            Settings.SetValue("Ketarin", "AutoScroll", mnuAutoScroll.Checked);
+
+            if (m_Updater.IsBusy)
+            {
+                e.Cancel = true;
+            }
+            else
+            {
+                LogDialog.Instance?.Close();
+            }
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            if (DesignMode) return;
+
+            RebuildCustomColumns();
+
+            mnuShowGroups.Checked = Conversion.ToBoolean(Settings.GetValue("Ketarin", "ShowGroups", true));
+            mnuAutoScroll.Checked = Conversion.ToBoolean(Settings.GetValue("Ketarin", "AutoScroll", true));
+            olvJobs.ShowGroups = mnuShowGroups.Checked;
+
+            if (Conversion.ToBoolean(Settings.GetValue("Ketarin", "ShowStatusBar", false)))
+            {
+                mnuShowStatusBar?.PerformClick();
+            }
+
+            UpdateList();
+            UpdateNumByStatus();
+
+            if (Convert.ToBoolean(Settings.GetValue("Ketarin", "ShowLog", false) ?? false))
+            {
+                mnuLog?.PerformClick();
+            }
+
+            if ((bool)Settings.GetValue("UpdateAtStartup", false))
+            {
+                RunJobs(false, false, false);
+            }
+
+            // Check applications for updates
+            if ((bool)Settings.GetValue("UpdateOnlineDatabase", true))
+            {
+                m_Updater.BeginCheckForOnlineUpdates(m_Jobs);
+            }
+
+            this.hotkeys = Hotkey.GetHotkeys();
+        }
+
+        private void MainForm_Resize(object sender, EventArgs e)
+        {
+            if (this.WindowState == FormWindowState.Minimized)
+            {
+                if (Convert.ToBoolean(Settings.GetValue("MinimizeToTray", false) ?? false))
+                {
+                    ntiTrayIcon.Visible = true;
+                    this.Hide();
+                }
+            }
+            else
+            {
+                m_PreviousState = WindowState;
+            }
         }
 
         #endregion

@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows.Forms;
 using CDBurnerXP.IO;
@@ -18,6 +19,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the file which is to be renamed.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string FileName
         {
             get
@@ -26,7 +28,7 @@ namespace Ketarin.Forms
             }
             set
             {
-                m_Directory = Path.GetDirectoryName(value);
+                m_Directory = Path.GetDirectoryName(value) ?? string.Empty;
                 txtFileName.Text = Path.GetFileName(value);
             }
         }

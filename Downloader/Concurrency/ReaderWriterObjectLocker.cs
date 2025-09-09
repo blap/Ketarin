@@ -34,7 +34,7 @@ namespace MyDownloader.Core.Concurrency
 
             public void Dispose()
             {
-                locker.locker.ReleaseReaderLock();
+                locker.locker.ExitReadLock();
             }
 
             #endregion
@@ -53,7 +53,7 @@ namespace MyDownloader.Core.Concurrency
 
             public void Dispose()
             {
-                locker.locker.ReleaseWriterLock();
+                locker.locker.ExitWriteLock();
             }
 
             #endregion
@@ -61,7 +61,7 @@ namespace MyDownloader.Core.Concurrency
         #endregion
 
         #region Fields
-        private ReaderWriterLock locker;
+        private ReaderWriterLockSlim locker;
         private IDisposable writerReleaser;
         private IDisposable readerReleaser; 
         #endregion
@@ -69,8 +69,7 @@ namespace MyDownloader.Core.Concurrency
         #region Constructor
         public ReaderWriterObjectLocker()
         {
-            // TODO: update to ReaderWriterLockSlim on .net 3.5
-            locker = new ReaderWriterLock();
+            locker = new ReaderWriterLockSlim();
 
             writerReleaser = new WriterReleaser(this);
             readerReleaser = new ReaderReleaser(this);
@@ -80,14 +79,14 @@ namespace MyDownloader.Core.Concurrency
         #region Methods
         public IDisposable LockForRead()
         {
-            locker.AcquireReaderLock(-1);
+            locker.EnterReadLock();
 
             return readerReleaser;
         }
 
         public IDisposable LockForWrite()
         {
-            locker.AcquireWriterLock(-1);
+            locker.EnterWriteLock();
 
             return writerReleaser;
         } 

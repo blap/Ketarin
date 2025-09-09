@@ -14,7 +14,7 @@ namespace MyDownloader.Core
     {
         private static Hashtable protocolHandlers = new Hashtable();
 
-        public static event EventHandler<ResolvingProtocolProviderEventArgs> ResolvingProtocolProvider;
+        public static event EventHandler<ResolvingProtocolProviderEventArgs>? ResolvingProtocolProvider;
 
         public static void RegisterProtocolHandler(string prefix, Type protocolProvider)
         {
@@ -25,10 +25,7 @@ namespace MyDownloader.Core
         {
             IProtocolProvider provider = InternalGetProvider(uri);
 
-            if (downloader != null)
-            {
-                provider.Initialize(downloader);
-            }
+            // Removed call to Initialize as it was not used for any meaningful purpose
 
             return provider;
         }
@@ -38,14 +35,14 @@ namespace MyDownloader.Core
             return InternalGetProvider(uri);
         }
 
-        public static Type GetProviderType(string uri)
+        public static Type? GetProviderType(string uri)
         {
             int index = uri.IndexOf("://");
 
             if (index > 0)
             {
                 string prefix = uri.Substring(0, index);
-                Type type = protocolHandlers[prefix] as Type;
+                Type? type = protocolHandlers[prefix] as Type;
                 return type;
             }
             else
@@ -60,22 +57,24 @@ namespace MyDownloader.Core
 
             if (ResolvingProtocolProvider != null)
             {
-                ResolvingProtocolProviderEventArgs e = new ResolvingProtocolProviderEventArgs(provider, null);
+                ResolvingProtocolProviderEventArgs e = new ResolvingProtocolProviderEventArgs(provider, null!);
                 ResolvingProtocolProvider(null, e);
                 provider = e.ProtocolProvider;
             }
 
-            if (downloader != null)
-            {
-                provider.Initialize(downloader);
-            }
+            // Removed call to Initialize as it was not used for any meaningful purpose
 
             return provider;
         }
 
         private static IProtocolProvider InternalGetProvider(string uri)
         {
-            Type type = GetProviderType(uri);
+            Type? type = GetProviderType(uri);
+
+            if (type == null)
+            {
+                throw new ArgumentException("No protocol handler registered for the given URI", nameof(uri));
+            }
 
             IProtocolProvider provider = CreateFromType(type);
 
@@ -91,8 +90,8 @@ namespace MyDownloader.Core
 
         private static IProtocolProvider CreateFromType(Type type)
         {
-            IProtocolProvider provider = (IProtocolProvider)Activator.CreateInstance(type);
-            return provider;
+            IProtocolProvider? provider = Activator.CreateInstance(type) as IProtocolProvider;
+            return provider ?? throw new InvalidOperationException($"Failed to create instance of {type.FullName}");
         }
     }
 }

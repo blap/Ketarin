@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using CDBurnerXP;
 using CDBurnerXP.Forms;
 using CDBurnerXP.IO;
-using CookComputing.XmlRpc;
+using Ketarin;
 
 namespace Ketarin.Forms
 {
@@ -38,6 +38,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets the ApplicationJob object shown in the dialog.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         internal ApplicationJob ApplicationJob
         {
             get {
@@ -59,6 +60,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Gets or sets whether or not the dialog is in read-only mode.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool ReadOnly 
         {
             get
@@ -130,7 +132,7 @@ namespace Ketarin.Forms
                 this.cboCategory.Text = string.IsNullOrEmpty(this.m_ApplicationJob.Category) ? null : this.m_ApplicationJob.Category;
             }
 
-            this.BeginInvoke((MethodInvoker)delegate()
+            this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate()
             {
                 // Do not set focus to TabControl 
                 txtApplicationName.Focus();
@@ -173,9 +175,9 @@ namespace Ketarin.Forms
             this.txtTarget.SetVariableNames(new[] { "category", "appname" }, appVarNames.ToArray());
             this.txtSpoofReferer.SetVariableNames(new[] { "category", "appname" }, appVarNames.ToArray());
             this.txtUseVariablesForChanges.Items.Clear();
-            this.txtUseVariablesForChanges.Items.AddRange(appVarNames.ToArray());
+            this.txtUseVariablesForChanges.Items.AddRange(appVarNames.OfType<string>().ToArray());
             this.cboHashVariable.Items.Clear();
-            this.cboHashVariable.Items.AddRange(appVarNames.ToArray());
+            this.cboHashVariable.Items.AddRange(appVarNames.OfType<string>().ToArray());
 
             foreach (SetupInstructionListBoxPanel panel in this.instructionsListBox.Panels)
             {
@@ -193,8 +195,8 @@ namespace Ketarin.Forms
             this.txtTarget.Text = this.m_ApplicationJob.TargetPath;
             this.txtUserAgent.Text = this.m_ApplicationJob.UserAgent;
             this.txtFileHippoId.Text = this.m_ApplicationJob.FileHippoId;
-            this.rbFileHippo.Checked = (this.m_ApplicationJob.DownloadSourceType == ApplicationJob.SourceType.FileHippo);
-            this.rbFixedUrl.Checked = (this.m_ApplicationJob.DownloadSourceType == ApplicationJob.SourceType.FixedUrl);
+            this.rbFileHippo.Checked = (this.m_ApplicationJob.DownloadSourceType == SourceType.FileHippo);
+            this.rbFixedUrl.Checked = (this.m_ApplicationJob.DownloadSourceType == SourceType.FixedUrl);
             this.chkEnabled.Checked = this.m_ApplicationJob.Enabled;
             this.numNumberOfRevisions.Value = this.m_ApplicationJob.NumberOfRevisions;
 
@@ -212,9 +214,9 @@ namespace Ketarin.Forms
             this.chkDownloadExclusively.Checked = this.m_ApplicationJob.ExclusiveDownload;
             this.chkCheckForUpdatesOnly.Checked = this.m_ApplicationJob.CheckForUpdatesOnly;
             this.txtSpoofReferer.Text = this.m_ApplicationJob.HttpReferer;
-            this.rbBetaAvoid.Checked = (this.ApplicationJob.DownloadBeta == ApplicationJob.DownloadBetaType.Avoid);
-            this.rbBetaDefault.Checked = (this.ApplicationJob.DownloadBeta == ApplicationJob.DownloadBetaType.Default);
-            this.rbAlwaysDownload.Checked = (this.ApplicationJob.DownloadBeta == ApplicationJob.DownloadBetaType.AlwaysDownload);
+            this.rbBetaAvoid.Checked = (this.ApplicationJob.DownloadBeta == DownloadBetaType.Avoid);
+            this.rbBetaDefault.Checked = (this.ApplicationJob.DownloadBeta == DownloadBetaType.Default);
+            this.rbAlwaysDownload.Checked = (this.ApplicationJob.DownloadBeta == DownloadBetaType.AlwaysDownload);
             this.txtUseVariablesForChanges.Text = this.m_ApplicationJob.VariableChangeIndicator;
             this.chkIgnoreFileInformation.Checked = this.m_ApplicationJob.IgnoreFileInformation;
             this.cboHashType.SelectedIndex = (int) this.m_ApplicationJob.HashType;
@@ -230,7 +232,11 @@ namespace Ketarin.Forms
             this.instructionsListBox.Panels.Clear();
             foreach (SetupInstruction instruction in this.m_ApplicationJob.SetupInstructions)
             {
-                this.instructionsListBox.Panels.Add(new SetupInstructionListBoxPanel(instruction.Clone() as SetupInstruction));
+                SetupInstruction? clonedInstruction = instruction.Clone() as SetupInstruction;
+                if (clonedInstruction != null)
+                {
+                    this.instructionsListBox.Panels.Add(new SetupInstructionListBoxPanel(clonedInstruction));
+                }
             }
         }
 
@@ -251,7 +257,7 @@ namespace Ketarin.Forms
             this.m_ApplicationJob.DeletePreviousFile = this.chkDeletePrevious.Checked;
             this.m_ApplicationJob.ExecuteCommand = this.txtExecuteAfter.Text;
             this.m_ApplicationJob.ExecutePreCommand = this.txtExecuteBefore.Text;
-            this.m_ApplicationJob.DownloadSourceType = (this.rbFixedUrl.Checked) ? ApplicationJob.SourceType.FixedUrl : ApplicationJob.SourceType.FileHippo;
+            this.m_ApplicationJob.DownloadSourceType = (this.rbFixedUrl.Checked) ? SourceType.FixedUrl : SourceType.FileHippo;
             this.m_ApplicationJob.Category = this.cboCategory.Text;
             this.m_ApplicationJob.ExclusiveDownload = this.chkDownloadExclusively.Checked;
             this.m_ApplicationJob.ShareApplication = this.chkShareOnline.Checked;
@@ -271,15 +277,15 @@ namespace Ketarin.Forms
 
             if (this.rbAlwaysDownload.Checked)
             {
-                this.m_ApplicationJob.DownloadBeta = ApplicationJob.DownloadBetaType.AlwaysDownload;
+                this.m_ApplicationJob.DownloadBeta = DownloadBetaType.AlwaysDownload;
             }
             else if (this.rbBetaAvoid.Checked)
             {
-                this.m_ApplicationJob.DownloadBeta = ApplicationJob.DownloadBetaType.Avoid;
+                this.m_ApplicationJob.DownloadBeta = DownloadBetaType.Avoid;
             }
             else
             {
-                this.m_ApplicationJob.DownloadBeta = ApplicationJob.DownloadBetaType.Default;
+                this.m_ApplicationJob.DownloadBeta = DownloadBetaType.Default;
             }
 
             // Setup instructions
@@ -309,7 +315,7 @@ namespace Ketarin.Forms
             {
                 using (FolderBrowserDialog dialog = new FolderBrowserDialog())
                 {
-                    string defaultTargetDir = Settings.GetValue("DefaultTargetDir") as string;
+                    string? defaultTargetDir = Settings.GetValue("DefaultTargetDir") as string;
 
                     // Folder browser doesn't like file names
                     if (Directory.Exists(this.txtTarget.Text))
@@ -394,6 +400,10 @@ namespace Ketarin.Forms
 
                 try
                 {
+                    // Disabled XML-RPC functionality for .NET 9 compatibility
+                    MessageBox.Show(this, "Online database functionality is not available in this version.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    /*
                     IKetarinRpc proxy = XmlRpcProxyGen.Create<IKetarinRpc>();
                     proxy.Timeout = 10000;
 
@@ -416,6 +426,7 @@ namespace Ketarin.Forms
                     // Everything is fine, upload now.
                     Thread thread = new Thread(ShareOnline) {IsBackground = true};
                     thread.Start(job);
+                    */
                 }
                 catch (WebException ex)
                 {
@@ -437,19 +448,20 @@ namespace Ketarin.Forms
         /// <param name="argument">The ApplicationJob which is to be uploaded</param>
         private static void ShareOnline(object argument)
         {
-            ApplicationJob job = argument as ApplicationJob;
+            ApplicationJob? job = argument as ApplicationJob;
             if (job == null) return;
 
             try
             {
+                // Disabled XML-RPC functionality for .NET 9 compatibility
+                MessageBox.Show("Online database functionality is not available in this version.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                /*
                 IKetarinRpc proxy = XmlRpcProxyGen.Create<IKetarinRpc>();
                 proxy.Timeout = 10000;
 
                 proxy.SaveApplication(job.GetXmlWithoutGlobalVariables(), Settings.GetValue("AuthorGuid") as string);
-            }
-            catch (XmlRpcFaultException ex)
-            {
-                LogDialog.Log("Could not submit '" + job.Name + "' to the online database: " + ex.FaultString);
+                */
             }
             catch (Exception)
             {
@@ -477,13 +489,13 @@ namespace Ketarin.Forms
         /// Automatically fills the application name text box based on the 
         /// FileHippo ID (to be used as background procress).
         /// </summary>
-        private void AutoFillApplicationName(object fileHippoId)
+        private void AutoFillApplicationName(object? fileHippoId)
         {
             string appName = string.Empty;
 
             try
             {
-                appName = ExternalServices.FileHippoAppName(fileHippoId as string);
+                appName = ExternalServices.FileHippoAppName(fileHippoId as string ?? string.Empty);
 
                 if (string.IsNullOrEmpty(appName)) return;
             }
@@ -498,7 +510,7 @@ namespace Ketarin.Forms
                 // Make sure that form does still exist
                 if (this.Visible)
                 {
-                    this.BeginInvoke((MethodInvoker)delegate
+                    this.BeginInvoke((System.Windows.Forms.MethodInvoker)delegate
                     {
                         // Reset cursor
                         Cursor = Cursors.Default;

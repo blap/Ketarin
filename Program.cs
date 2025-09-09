@@ -30,7 +30,7 @@ namespace Ketarin
 {
     internal static class Program
     {
-        private static NotifyIcon m_Icon;
+        private static NotifyIcon? m_Icon;
 
         [STAThread]
         private static void Main(string[] args)
@@ -72,7 +72,10 @@ namespace Ketarin
             WebRequest.RegisterPrefix("httpx", new HttpxRequestCreator());
 
             // Do not try using SSL3 by default since some websites make SSL3 requests fail.
+            // Note: ServicePointManager is obsolete in .NET 9, but we're keeping it for compatibility
+#pragma warning disable SYSLIB0014
             ServicePointManager.SecurityProtocol = Updater.DefaultHttpProtocols;
+#pragma warning restore SYSLIB0014
 
             // Either run silently on command line...
             if (arguments["silent"] != null)
@@ -122,7 +125,8 @@ namespace Ketarin
             else if (arguments["update"] != null && arguments["appguid"] != null)
             {
                 // Update properties of an application in the database
-                ApplicationJob job = DbManager.GetJob(new Guid(arguments["appguid"]));
+                string? appGuid = arguments["appguid"];
+                ApplicationJob? job = string.IsNullOrEmpty(appGuid) ? null : DbManager.GetJob(new Guid(appGuid ?? string.Empty));
                 if (job == null) return;
 
                 if (arguments["PreviousLocation"] != null)
@@ -224,12 +228,12 @@ namespace Ketarin
 
         #region Command line updater
 
-        private static void updater_ProgressChanged(object sender, Updater.JobProgressChangedEventArgs e)
+        private static void updater_ProgressChanged(object? sender, Updater.JobProgressChangedEventArgs e)
         {
             Console.WriteLine(e.ApplicationJob.Name + ": " + e.ProgressPercentage + "%");
         }
 
-        private static void updater_StatusChanged(object sender, Updater.JobStatusChangedEventArgs e)
+        private static void updater_StatusChanged(object? sender, Updater.JobStatusChangedEventArgs e)
         {
             if (e.NewStatus == Updater.Status.Downloading)
             {

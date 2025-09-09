@@ -1,5 +1,3 @@
-﻿using System.Windows.Forms;
-
 namespace Ketarin.Forms
 {
     /// <summary>
@@ -8,6 +6,7 @@ namespace Ketarin.Forms
     /// </summary>
     class TextBox : System.Windows.Forms.TextBox
     {
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string Text
         {
             get
@@ -17,12 +16,13 @@ namespace Ketarin.Forms
             set
             {
                 // Normalise line endings
-                if (!string.IsNullOrEmpty(value))
+                string nonNullValue = value ?? string.Empty;
+                if (!string.IsNullOrEmpty(nonNullValue))
                 {
-                    value = value.Replace("\r\n", "\n");
-                    value = value.Replace("\n", "\r\n");
+                    nonNullValue = nonNullValue.Replace("\r\n", "\n");
+                    nonNullValue = nonNullValue.Replace("\n", "\r\n");
                 }
-                base.Text = value;
+                base.Text = nonNullValue;
             }
         }
 

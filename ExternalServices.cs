@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
@@ -160,7 +160,7 @@ namespace Ketarin
         /// <summary>
         /// Determines the version of a given application on FileHippo.
         /// </summary>
-        public static string FileHippoVersion(string fileId, bool avoidBeta)
+        public static string? FileHippoVersion(string fileId, bool avoidBeta)
         {
             if (string.IsNullOrEmpty(fileId)) return null;
 
@@ -195,14 +195,14 @@ namespace Ketarin
 
             using (WebClient client = new WebClient())
             {
-                string mainPage = client.DownloadString(GetFileHippoBaseDownloadUrl(fileId));
+                string mainPage = client.DownloadString(GetFileHippoBaseDownloadUrl(fileId) ?? string.Empty);
 
                 // It will match almost anything from FileHippo (except drivers without version numbers...)
                 Regex regex = new Regex(@"<meta itemprop=""softwareVersion"" content=""(.+) [\.\dab]+(\s.+)?""/>", RegexOptions.IgnoreCase);
                 Match match = regex.Match(mainPage);
                 if (match.Success)
                 {
-                    return match.Groups[1].Value;
+                    return match.Groups[1].Value ?? string.Empty;
                 }
             }
 

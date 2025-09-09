@@ -13,7 +13,7 @@ namespace MyDownloader.Core
 
         public CalculatedSegment[] GetSegments(int segmentCount, RemoteFileInfo remoteFileInfo)
         {
-            long minSize = Settings.MinSegmentSize;
+            long minSize = Ketarin.Downloader.Settings.MinSegmentSize;
             long segmentSize = remoteFileInfo.FileSize / (long)segmentCount;
 
             while (segmentCount > 1 && segmentSize < minSize)

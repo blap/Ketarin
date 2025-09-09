@@ -1,7 +1,3 @@
-﻿using System.ComponentModel;
-using System.Windows.Forms;
-using wyDay.Controls;
-
 namespace Ketarin.Forms
 {
     partial class CopyFileInstructionDialog
@@ -9,7 +5,7 @@ namespace Ketarin.Forms
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private IContainer components = null;
+        private System.ComponentModel.IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -37,7 +33,8 @@ namespace Ketarin.Forms
             this.lblTarget = new System.Windows.Forms.Label();
             this.txtTarget = new Ketarin.Forms.VariableTextBox();
             this.bInsertArgument = new wyDay.Controls.SplitButton();
-            this.environmentMenu = new System.Windows.Forms.ContextMenu();
+            // Changed from ContextMenu to ContextMenuStrip
+            this.environmentMenu = new System.Windows.Forms.ContextMenuStrip();
             this.SuspendLayout();
             // 
             // bCancel
@@ -96,10 +93,15 @@ namespace Ketarin.Forms
             this.bInsertArgument.Name = "bInsertArgument";
             this.bInsertArgument.SeparateDropdownButton = false;
             this.bInsertArgument.Size = new System.Drawing.Size(94, 23);
-            this.bInsertArgument.SplitMenu = this.environmentMenu;
+            this.bInsertArgument.SplitMenuStrip = this.environmentMenu;
             this.bInsertArgument.TabIndex = 4;
             this.bInsertArgument.Text = "&Environment";
             this.bInsertArgument.UseVisualStyleBackColor = true;
+            // 
+            // environmentMenu (ContextMenuStrip)
+            // 
+            this.environmentMenu.Name = "environmentMenu";
+            this.environmentMenu.Size = new System.Drawing.Size(61, 4);
             // 
             // CopyFileInstructionDialog
             // 
@@ -128,11 +130,12 @@ namespace Ketarin.Forms
 
         #endregion
 
-        private Label lblSource;
+        private System.Windows.Forms.Label lblSource;
         private VariableTextBox txtSource;
-        private Label lblTarget;
+        private System.Windows.Forms.Label lblTarget;
         private VariableTextBox txtTarget;
-        private SplitButton bInsertArgument;
-        private ContextMenu environmentMenu;
+        private wyDay.Controls.SplitButton bInsertArgument;
+        // Changed from ContextMenu to ContextMenuStrip
+        private System.Windows.Forms.ContextMenuStrip environmentMenu;
     }
 }
