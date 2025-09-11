@@ -121,7 +121,7 @@ namespace CDBurnerXP.Forms
                         col.LastDisplayIndex = (int)Settings.GetValue(olv, col.Text + ":LastDisplayIndex", col.LastDisplayIndex);
                     }
 
-                    string sortColName = Settings.GetValue(olv, "LastSortColumn", olv.LastSortColumn?.Name ?? string.Empty) as string;
+                    string sortColName = Settings.GetValue(olv, "LastSortColumn", olv.LastSortColumn?.Name ?? string.Empty)?.ToString() ?? string.Empty;
                     if (!string.IsNullOrEmpty(sortColName))
                     {
                         foreach (OLVColumn col in olv.AllColumns)

@@ -1,0 +1,98 @@
+{
+  "version": 3,
+  "targets": {
+    "net9.0-windows7.0": {
+      "Ketarin/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/Ketarin.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Ketarin.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WindowsForms"
+        ]
+      }
+    }
+  },
+  "libraries": {
+    "Ketarin/1.0.0": {
+      "type": "project",
+      "path": "../Ketarin.Net9.csproj",
+      "msbuildProject": "../Ketarin.Net9.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net9.0-windows7.0": [
+      "Ketarin >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\Admin\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "C:\\Users\\Admin\\Documents\\GitHub\\Ketarin\\GitHubIntegrationTestProject\\GitHubIntegrationTest.csproj",
+      "projectName": "GitHubIntegrationTest",
+      "projectPath": "C:\\Users\\Admin\\Documents\\GitHub\\Ketarin\\GitHubIntegrationTestProject\\GitHubIntegrationTest.csproj",
+      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Admin\\Documents\\GitHub\\Ketarin\\GitHubIntegrationTestProject\\obj\\",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net9.0-windows"
+      ],
+      "frameworks": {
+        "net9.0-windows7.0": {
+          "targetAlias": "net9.0-windows",
+          "projectReferences": {
+            "C:\\Users\\Admin\\Documents\\GitHub\\Ketarin\\Ketarin.Net9.csproj": {
+              "projectPath": "C:\\Users\\Admin\\Documents\\GitHub\\Ketarin\\Ketarin.Net9.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.300"
+    },
+    "frameworks": {
+      "net9.0-windows7.0": {
+        "targetAlias": "net9.0-windows",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          },
+          "Microsoft.WindowsDesktop.App.WindowsForms": {
+            "privateAssets": "none"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

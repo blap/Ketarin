@@ -512,11 +512,11 @@ namespace CDBurnerXP.Controls
         /// Return the model object of the row that is checked or null if no row is checked
         /// or more than one row is checked
         /// </summary>
-        public Object CheckedObject
+        public Object? CheckedObject
         {
             get {
                 ArrayList checkedObjects = this.GetCheckedObjects();
-                if (checkedObjects.Count == 1)
+                if (checkedObjects.Count == 1 && checkedObjects[0] != null)
                     return checkedObjects[0];
                 else
                     return null;

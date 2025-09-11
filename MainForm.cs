@@ -908,7 +908,8 @@ namespace Ketarin
                 }
                 catch (Exception)
                 {
-                    jobs = new[] { ApplicationJob.ImportFromTemplateOrXml(this, SafeClipboard.GetData(DataFormats.Text) as string ?? string.Empty, m_Jobs, true) };
+                    ApplicationJob? importedJob = ApplicationJob.ImportFromTemplateOrXml(this, SafeClipboard.GetData(DataFormats.Text) as string ?? string.Empty, m_Jobs, true);
+                    jobs = importedJob != null ? new[] { importedJob } : Array.Empty<ApplicationJob>();
                 }
                 if (jobs == null || jobs.Length == 0) return;
 

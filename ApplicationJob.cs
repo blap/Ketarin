@@ -479,7 +479,11 @@ namespace Ketarin
                         {
                             if (!typeof(IEnumerable).IsAssignableFrom(property.PropertyType) || property.PropertyType == typeof(string))
                             {
-                                value = UrlVariable.Replace(value, varname, Convert.ToString(property.GetValue(this.Parent, null)), this.Parent);
+                                object? propertyValue = property.GetValue(this.Parent, null);
+                                if (propertyValue != null)
+                                {
+                                    value = UrlVariable.Replace(value, varname, Convert.ToString(propertyValue) ?? string.Empty, this.Parent);
+                                }
                             }
                         }
                     }
@@ -491,15 +495,25 @@ namespace Ketarin
                         {
                             if (!onlyCachedContent)
                             {
-                                this.Parent.FileHippoVersion = ExternalServices.FileHippoVersion(this.Parent.FileHippoId, this.Parent.AvoidDownloadBeta);
+                                this.Parent.FileHippoVersion = ExternalServices.FileHippoVersion(this.Parent.FileHippoId, this.Parent.AvoidDownloadBeta) ?? string.Empty;
                                 this.m_VersionDownloaded = true;
                             }
-                            value = UrlVariable.Replace(value, "version", this.Parent.FileHippoVersion, this.Parent);
+                            value = UrlVariable.Replace(value, "version", this.Parent.FileHippoVersion ?? string.Empty, this.Parent);
+                        }
+                        // GitHub version
+                        else if (this.Parent.DownloadSourceType == SourceType.GitHub && UrlVariable.IsVariableUsedInString("version", value))
+                        {
+                            if (!onlyCachedContent)
+                            {
+                                this.Parent.GitHubVersion = GitHubServices.GitHubVersion(this.Parent.GitHubRepositoryId, this.Parent.AvoidDownloadBeta) ?? string.Empty;
+                                this.m_VersionDownloaded = true;
+                            }
+                            value = UrlVariable.Replace(value, "version", this.Parent.GitHubVersion ?? string.Empty, this.Parent);
                         }
                         else if (!string.IsNullOrEmpty(this.Parent.CachedPadFileVersion))
                         {
                             // or PAD file version as alternative
-                            value = UrlVariable.Replace(value, "version", this.Parent.CachedPadFileVersion, this.Parent);
+                            value = UrlVariable.Replace(value, "version", this.Parent.CachedPadFileVersion ?? string.Empty, this.Parent);
                         }
                     }
                 }
@@ -662,6 +676,16 @@ namespace Ketarin
         [XmlIgnore()]
         public string FileHippoVersion { get; set; }
 
+        [XmlElement("GitHubRepositoryId")]
+        public string GitHubRepositoryId { get; set; }
+
+        /// <summary>
+        /// Contains the cached version information
+        /// on GitHub.
+        /// </summary>
+        [XmlIgnore()]
+        public string GitHubVersion { get; set; }
+
         [XmlElement("LastUpdated")]
         public DateTime? LastUpdated
         {
@@ -725,6 +749,8 @@ namespace Ketarin
             this.Enabled = true;
             this.FileHippoId = string.Empty;
             this.FileHippoVersion = string.Empty;
+            this.GitHubRepositoryId = string.Empty;
+            this.GitHubVersion = string.Empty;
             this.m_Variables = new UrlVariableCollection(this);
             this.ExecuteCommandType = ScriptType.Batch;
             this.ExecutePreCommandType = ScriptType.Batch;
@@ -781,6 +807,7 @@ namespace Ketarin
             this.DownloadDate = DateTime.Now;
             this.DownloadSourceType = job.DownloadSourceType;
             this.FileHippoId = job.FileHippoId;
+            this.GitHubRepositoryId = job.GitHubRepositoryId;
             this.FixedDownloadUrl = job.FixedDownloadUrl;
             this.HttpReferer = job.HttpReferer;
             this.UserAgent = job.UserAgent;
@@ -837,7 +864,7 @@ namespace Ketarin
             {
                 using (StreamReader reader = new StreamReader(sourceFile))
                 {
-                    return ImportFromPadXml(reader.ReadToEnd());
+                    return ImportFromPadXml(reader.ReadToEnd()) ?? new ApplicationJob();
                 }
             }
         }
@@ -878,19 +905,35 @@ namespace Ketarin
             ApplicationJob job = new ApplicationJob {DownloadSourceType = SourceType.FixedUrl};
             if (progNames.Count > 0)
             {
-                job.Name = doc.GetElementsByTagName("Program_Name")[0].InnerText;
+                XmlNodeList progNameNodes = doc.GetElementsByTagName("Program_Name");
+                if (progNameNodes.Count > 0 && progNameNodes[0] != null)
+                {
+                    job.Name = progNameNodes[0].InnerText;
+                }
             }
             if (downloadUrls.Count > 0)
             {
-                job.FixedDownloadUrl = doc.GetElementsByTagName("Primary_Download_URL")[0].InnerText;
+                XmlNodeList downloadUrlNodes = doc.GetElementsByTagName("Primary_Download_URL");
+                if (downloadUrlNodes.Count > 0 && downloadUrlNodes[0] != null)
+                {
+                    job.FixedDownloadUrl = downloadUrlNodes[0].InnerText;
+                }
             }
             if (versionInfos.Count > 0)
             {
-                job.CachedPadFileVersion = doc.GetElementsByTagName("Program_Version")[0].InnerText;
+                XmlNodeList programVersionNodes = doc.GetElementsByTagName("Program_Version");
+                if (programVersionNodes.Count > 0 && programVersionNodes[0] != null)
+                {
+                    job.CachedPadFileVersion = programVersionNodes[0].InnerText;
+                }
             }
             else if (versionInfos2.Count > 0)
             {
-                job.CachedPadFileVersion = doc.GetElementsByTagName("Filename_Versioned")[0].InnerText;
+                XmlNodeList filenameVersionedNodes = doc.GetElementsByTagName("Filename_Versioned");
+                if (filenameVersionedNodes.Count > 0 && filenameVersionedNodes[0] != null)
+                {
+                    job.CachedPadFileVersion = filenameVersionedNodes[0].InnerText;
+                }
             }
 
             return job;
@@ -961,7 +1004,7 @@ namespace Ketarin
             }
 
             // Change encoding
-            if (doc.FirstChild.NodeType == XmlNodeType.XmlDeclaration)
+            if (doc.FirstChild != null && doc.FirstChild.NodeType == XmlNodeType.XmlDeclaration)
             {
                 XmlDeclaration xmlDeclaration = (XmlDeclaration)doc.FirstChild;
                 xmlDeclaration.Encoding = "utf-8";
@@ -1115,7 +1158,7 @@ namespace Ketarin
         /// without saving it.
         /// </summary>
         /// <returns>The last imported ApplicationJob</returns>
-        public static ApplicationJob LoadOneFromXml(string xml)
+        public static ApplicationJob? LoadOneFromXml(string xml)
         {
             XmlDocument doc = new XmlDocument();
             try
@@ -1163,12 +1206,12 @@ namespace Ketarin
         /// </summary>
         /// <param name="owner">Handle of the parent window</param>
         /// <param name="filename">File name of the XML file</param>
-        public static ApplicationJob ImportFromTemplateOrXml(IWin32Window owner, string filename, ApplicationJob[] appsToCheckForUpdates)
+        public static ApplicationJob? ImportFromTemplateOrXml(IWin32Window owner, string filename, ApplicationJob[] appsToCheckForUpdates)
         {
             return ImportFromTemplateOrXml(owner, File.ReadAllText(filename), appsToCheckForUpdates, true);
         }
 
-        public static ApplicationJob ImportFromTemplateOrXml(IWin32Window owner, string xml, ApplicationJob[] appsToCheckForUpdates, bool isString)
+        public static ApplicationJob? ImportFromTemplateOrXml(IWin32Window owner, string xml, ApplicationJob[] appsToCheckForUpdates, bool isString)
         {
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
@@ -1315,11 +1358,13 @@ namespace Ketarin
             // Remove all variables from the templates to compare them properly
             foreach (XmlNode variableNode in templateA.SelectNodes("//placeholder"))
             {
-                variableNode.InnerText = string.Empty;
+                if (variableNode != null)
+                    variableNode.InnerText = string.Empty;
             }
             foreach (XmlNode variableNode in templateB.SelectNodes("//placeholder"))
             {
-                variableNode.InnerText = string.Empty;
+                if (variableNode != null)
+                    variableNode.InnerText = string.Empty;
             }
 
             return templateA.OuterXml == templateB.OuterXml;
@@ -1337,7 +1382,8 @@ namespace Ketarin
             XmlNode[] placeholders = new XmlNode[placeholdersList.Count];
             for (int i = 0; i < placeholders.Length; i++)
             {
-                placeholders[i] = placeholdersList[i];
+                if (placeholdersList[i] != null)
+                    placeholders[i] = placeholdersList[i];
             }
 
             foreach (XmlElement element in placeholders)
@@ -1367,7 +1413,8 @@ namespace Ketarin
                 }
 
                 // Replace the placeholder with a text node
-                element.ParentNode.ReplaceChild(doc.CreateTextNode(values[name]), element);
+                if (values.ContainsKey(name) && values[name] != null)
+                element.ParentNode?.ReplaceChild(doc.CreateTextNode(values[name]), element);
             }
         }
 
@@ -1412,6 +1459,7 @@ namespace Ketarin
             this.m_LastUpdated = reader["LastUpdated"] as DateTime?;
             this.Enabled = Convert.ToBoolean(reader["IsEnabled"] ?? false);
             this.FileHippoId = reader["FileHippoId"] as string ?? string.Empty;
+            this.GitHubRepositoryId = reader["GitHubRepositoryId"] as string ?? string.Empty;
             this.DeletePreviousFile = Convert.ToBoolean(reader["DeletePreviousFile"] ?? false);
             this.PreviousLocation = reader["PreviousLocation"] as string ?? string.Empty;
             this.DownloadSourceType = (SourceType)Convert.ToByte(reader["SourceType"] ?? (byte)0);
@@ -1421,6 +1469,7 @@ namespace Ketarin
             this.CanBeShared = Convert.ToBoolean(reader["CanBeShared"] ?? false);
             this.m_ShareApplication = Convert.ToBoolean(reader["ShareApplication"] ?? false);
             this.FileHippoVersion = reader["FileHippoVersion"] as string ?? string.Empty;
+            this.GitHubVersion = reader["GitHubVersion"] as string ?? string.Empty;
             this.HttpReferer = reader["HttpReferer"] as string ?? string.Empty;
             this.m_VariableChangeIndicator = reader["VariableChangeIndicator"] as string ?? string.Empty;
             this.HashVariable = reader["HashVariable"] as string ?? string.Empty;
@@ -1477,6 +1526,8 @@ namespace Ketarin
                 FixedDownloadUrl = this.FixedDownloadUrl,
                 FileHippoId = this.FileHippoId,
                 FileHippoVersion = this.FileHippoVersion,
+                GitHubRepositoryId = this.GitHubRepositoryId,
+                GitHubVersion = this.GitHubVersion,
                 DateAdded = this.DateAdded,
                 LastUpdated = this.m_LastUpdated,
                 DownloadDate = this.DownloadDate,
@@ -2004,7 +2055,7 @@ namespace Ketarin
         {
             // Execute a default command?
             string defaultCommand = Settings.GetValue("DefaultCommand") as string;
-            ScriptType defaultCommandType = Command.ConvertToScriptType(Settings.GetValue("DefaultCommandType") as string);
+            ScriptType defaultCommandType = Command.ConvertToScriptType(Settings.GetValue("DefaultCommandType") as string ?? string.Empty);
             new Command(defaultCommand, defaultCommandType).Execute(this, this.PreviousLocation);
 
             // Do we need to execute a command after downloading?

@@ -1188,7 +1188,7 @@ namespace FTPLib
 
 			try
 			{
-				bytes_got = file.Read(bytes, 0, bytes.Length);
+				bytes_got = file?.Read(bytes, 0, bytes.Length) ?? 0;
 				bytes_total += bytes_got;
 				data_sock?.Send(bytes, (int)bytes_got, 0);
 				if(bytes_got <= 0)
@@ -1211,9 +1211,9 @@ namespace FTPLib
 					SetBinaryMode(false);
 				}
 			}
-			catch(Exception ex)
+			catch(Exception)
 			{
-				file.Close();
+				file?.Close();
 				file = null;
 				ReadResponse();
 				SetBinaryMode(false);
@@ -1257,10 +1257,10 @@ namespace FTPLib
 					return bytes_got;
 				}
 
-				file.Write(bytes, 0, (int)bytes_got);
+				file?.Write(bytes, 0, (int)bytes_got);
 				bytes_total += bytes_got;
 			}
-			catch(Exception ex)
+			catch(Exception)
 			{
 				CloseDataSocket();
 				file?.Close();

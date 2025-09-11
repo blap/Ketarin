@@ -520,14 +520,18 @@ namespace CDBurnerXP.Controls
                 System.Reflection.PropertyInfo propertyInfo = type.GetProperty(part);
                 if (propertyInfo != null)
                 {
-                    currentObject = propertyInfo.GetValue(currentObject, null);
+                    currentObject = propertyInfo?.GetValue(currentObject, null) ?? currentObject;
                 }
                 else
                 {
                     System.Reflection.MethodInfo methodInfo = type.GetMethod(part);
                     if (methodInfo != null)
                     {
-                        currentObject = methodInfo.Invoke(currentObject, null);
+                        object? methodResult = methodInfo.Invoke(currentObject, null);
+                        if (methodResult != null)
+                            currentObject = methodResult;
+                        else
+                            return null;
                     }
                     else
                     {
@@ -576,7 +580,7 @@ namespace CDBurnerXP.Controls
                 System.Reflection.PropertyInfo propertyInfo = type.GetProperty(parts[i]);
                 if (propertyInfo != null)
                 {
-                    currentObject = propertyInfo.GetValue(currentObject, null);
+                    currentObject = propertyInfo?.GetValue(currentObject, null) ?? currentObject;
                 }
                 else
                 {
@@ -603,8 +607,8 @@ namespace CDBurnerXP.Controls
         /// <returns>A string representation of the aspect value</returns>
         public string GetStringValue(object rowObject)
         {
-            object aspect = this.GetValue(rowObject);
-            return this.ValueToString(aspect);
+            object? aspect = this.GetValue(rowObject);
+            return aspect != null ? this.ValueToString(aspect) : string.Empty;
         }
 
         /// <summary>
@@ -618,7 +622,7 @@ namespace CDBurnerXP.Controls
                 return "";
 
             if (this.AspectToStringConverter != null)
-                return this.AspectToStringConverter(value);
+                return this.AspectToStringConverter(value) ?? value.ToString() ?? string.Empty;
             else if (!String.IsNullOrEmpty(this.AspectToStringFormat))
                 return String.Format(this.AspectToStringFormat, value);
             else
@@ -648,7 +652,7 @@ namespace CDBurnerXP.Controls
             if (this.GroupKeyGetter != null)
                 return this.GroupKeyGetter(rowObject);
             else if (!String.IsNullOrEmpty(this.AspectName))
-                return this.GetValue(rowObject);
+                return this.GetValue(rowObject) ?? null;
             else
                 return null;
         }
@@ -661,7 +665,7 @@ namespace CDBurnerXP.Controls
         public string ConvertGroupKeyToTitle(object value)
         {
             if (this.GroupKeyToTitleConverter != null)
-                return this.GroupKeyToTitleConverter(value);
+                return this.GroupKeyToTitleConverter(value) ?? value.ToString() ?? string.Empty;
             else if (value == null)
                 return "{null}";
             else

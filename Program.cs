@@ -35,6 +35,13 @@ namespace Ketarin
         [STAThread]
         private static void Main(string[] args)
         {
+            // Check if we're running in test mode
+            if (args.Length > 0 && args[0] == "--test")
+            {
+                GitHubServices.RunIntegrationTests();
+                return;
+            }
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -199,73 +206,42 @@ namespace Ketarin
                     MessageBox.Show("Setup cannot be started: " + ex.Message, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-            // ...or launch the GUI.
+            // ...or show the GUI
             else
             {
-                Application.Run(new MainForm());
+                MainForm form = new MainForm();
+                Application.Run(form);
             }
+        }
 
-            string logFile = arguments["log"];
-            if (!string.IsNullOrEmpty(logFile))
+        private static void updater_ProgressChanged(object? sender, Updater.JobProgressChangedEventArgs e)
+        {
+            // This is intentionally left blank
+        }
+
+        private static void updater_StatusChanged(object? sender, Updater.JobStatusChangedEventArgs e)
+        {
+            switch (e.NewStatus)
             {
-                try
-                {
-                    logFile = UrlVariable.GlobalVariables.ReplaceAllInString(logFile);
-                    LogDialog.SaveLogToFile(logFile);
-                }
-                catch (Exception)
-                {
-                    // ignore errors
-                }
+                case Updater.Status.UpdateSuccessful:
+                    Console.WriteLine("Update successful: " + e.ApplicationJob.Name);
+                    break;
+                case Updater.Status.Failure:
+                    Console.WriteLine("Update failed: " + e.ApplicationJob.Name);
+                    break;
+                case Updater.Status.UpdateAvailable:
+                    Console.WriteLine("Update available: " + e.ApplicationJob.Name);
+                    break;
+                case Updater.Status.NoUpdate:
+                    Console.WriteLine("No update: " + e.ApplicationJob.Name);
+                    break;
             }
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            Exception ex = e.ExceptionObject as Exception;
-            MessageBox.Show("An unhandled exception occured and Ketarin needs to be closed.\n\n" + (ex == null ? "" : ex.ToString()), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Exception ex = (Exception)e.ExceptionObject;
+            MessageBox.Show("An unhandled exception occurred: " + ex.Message + "\n\n" + ex.StackTrace, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
-
-        #region Command line updater
-
-        private static void updater_ProgressChanged(object? sender, Updater.JobProgressChangedEventArgs e)
-        {
-            Console.WriteLine(e.ApplicationJob.Name + ": " + e.ProgressPercentage + "%");
-        }
-
-        private static void updater_StatusChanged(object? sender, Updater.JobStatusChangedEventArgs e)
-        {
-            if (e.NewStatus == Updater.Status.Downloading)
-            {
-                // No status of interest
-                return;
-            }
-
-            string status = e.ApplicationJob.Name + ": ";
-
-            switch (e.NewStatus)
-            {
-                case Updater.Status.Failure:
-                    status += "Failed.";
-                    break;
-
-                case Updater.Status.NoUpdate:
-                    status += "No update available.";
-                    break;
-
-                case Updater.Status.UpdateSuccessful:
-                    status += "Update successful.";
-                    break;
-            }
-
-            Console.WriteLine(status);
-
-            if (m_Icon != null)
-            {
-                m_Icon.ShowBalloonTip(2000, "Ketarin", status, (e.NewStatus == Updater.Status.Failure ? ToolTipIcon.Error : ToolTipIcon.Info));
-            }
-        }
-
-        #endregion
     }
 }

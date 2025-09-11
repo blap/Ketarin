@@ -67,7 +67,7 @@ namespace CDBurnerXP.Forms
             set
             {
                 m_StatusText = value;
-                lblStatus.Text = CompactString(value, tableLayoutPanel1.Width - 15, Font, "");
+                lblStatus.Text = CompactString(value, tableLayoutPanel1?.Width - 15 ?? 0, Font, "");
                 lblStatus.Visible = !string.IsNullOrEmpty(lblStatus.Text);
             }
         }
@@ -254,16 +254,13 @@ namespace CDBurnerXP.Forms
         {
             if (m_DoWorkDelegate != null)
             {
-                m_Result = this.OnDoWork();
+                m_Result = m_DoWorkDelegate();
             }
         }
 
         private void m_Worker_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
         {
-            if (prgProgress != null)
-            {
-                prgProgress.Value = 100;
-            }
+            if (prgProgress != null) prgProgress.Value = 100;
             m_Error = e.Error;
             Close();
         }

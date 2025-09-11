@@ -28,10 +28,10 @@ namespace CDBurnerXP.IO
             {
                 try
                 {
-                    RegistryKey key = Registry.CurrentUser;
-                    key = key.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced");
+                    RegistryKey? key = Registry.CurrentUser;
+                    key = key?.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced");
                     object? valueObj = key?.GetValue("Hidden");
-                    int value = (valueObj != null && valueObj is int) ? Convert.ToInt16(valueObj) : 0;
+                    int value = (valueObj != null && valueObj is int) ? Convert.ToInt32(valueObj) : 0;
                     return (value == 1);
                 }
                 catch (Exception)
@@ -70,8 +70,8 @@ namespace CDBurnerXP.IO
                 object? noDrivesObj = key.GetValue("NoDrives");
                 object? noViewOnDrivesObj = key.GetValue("NoViewOnDrives");
                 
-                int noDrives = noDrivesObj != null ? Convert.ToInt32(noDrivesObj) : 0;
-                int noViewOnDrives = noViewOnDrivesObj != null ? Convert.ToInt32(noViewOnDrivesObj) : 0;
+                int noDrives = (noDrivesObj != null && noDrivesObj is int) ? Convert.ToInt32(noDrivesObj) : 0;
+                int noViewOnDrives = (noViewOnDrivesObj != null && noViewOnDrivesObj is int) ? Convert.ToInt32(noViewOnDrivesObj) : 0;
 
                 return IsDriveInUnitmask(noDrives, driveLetter) || IsDriveInUnitmask(noViewOnDrives, driveLetter);
             }
@@ -113,10 +113,10 @@ namespace CDBurnerXP.IO
         {
             try
             {
-                string rootPath = Path.GetPathRoot(sourcePath);
+                string? rootPath = Path.GetPathRoot(sourcePath);
                 if (string.IsNullOrEmpty(rootPath)) return false;
                 
-                DriveInfo info = new DriveInfo(rootPath);
+                DriveInfo info = new DriveInfo(rootPath ?? string.Empty);
                 return (info.DriveType == DriveType.Removable || info.DriveType == DriveType.CDRom);
             }
             catch (Exception)
@@ -136,10 +136,10 @@ namespace CDBurnerXP.IO
             {
                 if (sourcePath.StartsWith("\\\\")) return true;
                 
-                string rootPath = Path.GetPathRoot(sourcePath);
+                string? rootPath = Path.GetPathRoot(sourcePath);
                 if (string.IsNullOrEmpty(rootPath)) return false;
                 
-                DriveInfo info = new DriveInfo(rootPath);
+                DriveInfo info = new DriveInfo(rootPath ?? string.Empty);
                 return (info.DriveType == DriveType.Network);
             }
             catch (Exception)
@@ -514,12 +514,13 @@ namespace CDBurnerXP.IO
                 {
                     RegistryKey key = Registry.CurrentUser;
                     key = key.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders");
-                    if ((key != null) & (key.GetValue(folderName) != null))
+                    if ((key != null) && (key.GetValue(folderName) != null))
                     {
                         object? value = key.GetValue(folderName);
                         if (value != null)
                         {
-                            result = value.ToString().TrimEnd(Path.DirectorySeparatorChar);
+                            string? valueStr = value.ToString();
+                            result = (valueStr ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar);
                         }
                     }
                 }

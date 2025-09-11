@@ -20,7 +20,7 @@ namespace Ketarin
     {
         private readonly SearchPanel searchPanel = new SearchPanel();
         private readonly TextBox searchTextBox = new TextBox();
-        private List<ApplicationJob> preSearchList = new List<ApplicationJob>(); // Initialize to fix CS8618
+        private List<ApplicationJob>? preSearchList;
         private readonly CheckBox enabledJobsCheckbox = new CheckBox();
         public const string DefaultEmptyMessage = "No applications have been added yet.";
 

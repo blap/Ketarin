@@ -679,6 +679,10 @@ namespace Ketarin
             {
                 downloadUrl = ExternalServices.FileHippoDownloadUrl(job.FileHippoId, job.AvoidDownloadBeta);
             }
+            else if (job.DownloadSourceType == SourceType.GitHub)
+            {
+                downloadUrl = GitHubServices.GitHubDownloadUrl(job.GitHubRepositoryId, job.AvoidDownloadBeta);
+            }
             else
             {
                 downloadUrl = job.FixedDownloadUrl;

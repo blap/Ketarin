@@ -12,7 +12,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <Platforms>x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AssemblyTitle>Ketarin</AssemblyTitle>
     <AssemblyDescription>A small application to keep a collection of setup files up-to-date.</AssemblyDescription>
     <AssemblyCompany>Canneverbe Limited</AssemblyCompany>
@@ -20,7 +20,10 @@
     <AssemblyCopyright>© Canneverbe Limited 2008-2020</AssemblyCopyright>
     <AssemblyVersion>1.9.0.0</AssemblyVersion>
     <AssemblyFileVersion>1.9.0.0</AssemblyFileVersion>
-    <NoWarn>WFO1000</NoWarn>
+    <NoWarn>WFO1000;CA1416;SYSLIB0014</NoWarn>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,9 +38,107 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>MainForm.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CDBurnerXP\AdvancedListBox.resx">
+      <DependentUpon>AdvancedListBox.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CDBurnerXP\ListBoxPanel.resx">
+      <DependentUpon>ListBoxPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CDBurnerXP\ProgressDialog.resx">
+      <DependentUpon>ProgressDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AboutDialog.resx">
+      <DependentUpon>AboutDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AddCustomColumnDialog.resx">
+      <DependentUpon>AddCustomColumnDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ApplicationDatabaseBaseDialog.resx">
+      <DependentUpon>ApplicationDatabaseBaseDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ApplicationJobDialog.resx">
+      <DependentUpon>ApplicationJobDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\BrowserPreviewDialog.resx">
+      <DependentUpon>BrowserPreviewDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ChooseAppsToInstallDialog.resx">
+      <DependentUpon>ChooseAppsToInstallDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CloseProcessInstructionDialog.resx">
+      <DependentUpon>CloseProcessInstructionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CommandControl.resx">
+      <DependentUpon>CommandControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CopyFileInstructionDialog.resx">
+      <DependentUpon>CopyFileInstructionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CustomSetupInstructionDialog.resx">
+      <DependentUpon>CustomSetupInstructionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\DeleteApplicationDialog.resx">
+      <DependentUpon>DeleteApplicationDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\EditVariablesDialog.resx">
+      <DependentUpon>EditVariablesDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ErrorsDialog.resx">
+      <DependentUpon>ErrorsDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ImportFromDatabaseDialog.resx">
+      <DependentUpon>ImportFromDatabaseDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\InstallingApplicationsDialog.resx">
+      <DependentUpon>InstallingApplicationsDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\InstructionBaseDialog.resx">
+      <DependentUpon>InstructionBaseDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\LogDialog.resx">
+      <DependentUpon>LogDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\MultilineEditorDialog.resx">
+      <DependentUpon>MultilineEditorDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\NewSnippetDialog.resx">
+      <DependentUpon>NewSnippetDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\NewVariableDialog.resx">
+      <DependentUpon>NewVariableDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\PostDataEditor.resx">
+      <DependentUpon>PostDataEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RenameFileDialog.resx">
+      <DependentUpon>RenameFileDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SelectApplicationDialog.resx">
+      <DependentUpon>SelectApplicationDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SetPlaceholderDialog.resx">
+      <DependentUpon>SetPlaceholderDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SettingsDialog.resx">
+      <DependentUpon>SettingsDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SetupInstructionListBoxPanel.resx">
+      <DependentUpon>SetupInstructionListBoxPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SimilarApplicationsDialog.resx">
+      <DependentUpon>SimilarApplicationsDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\StartProcessInstructionDialog.resx">
+      <DependentUpon>StartProcessInstructionDialog.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
 

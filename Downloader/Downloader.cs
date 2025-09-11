@@ -283,7 +283,7 @@ namespace MyDownloader.Core
             }
         }
 
-        public Exception LastError
+        public Exception? LastError
         {
             get { return lastError; }
             set { lastError = value; }
@@ -327,7 +327,7 @@ namespace MyDownloader.Core
             }
         }
 
-        public IMirrorSelector MirrorSelector
+        public IMirrorSelector? MirrorSelector
         {
             get { return mirrorSelector; }
             set
@@ -338,7 +338,7 @@ namespace MyDownloader.Core
                 }
 
                 mirrorSelector = value;
-                mirrorSelector.Init(this);                
+                mirrorSelector?.Init(this);                
             }
         }
 
@@ -522,7 +522,8 @@ namespace MyDownloader.Core
             FileInfo fileInfo = new FileInfo(this.LocalFile);
             if (!Directory.Exists(fileInfo.DirectoryName))
             {
-                Directory.CreateDirectory(fileInfo.DirectoryName);
+                if (!string.IsNullOrEmpty(fileInfo.DirectoryName))
+                    Directory.CreateDirectory(fileInfo.DirectoryName);
             }
 
             using (FileStream fs = new FileStream(this.LocalFile, FileMode.Create, FileAccess.Write))
@@ -743,7 +744,7 @@ namespace MyDownloader.Core
                 {
                     if (Segments[i].LastError != null)
                     {
-                        this.LastError = Segments[i].LastError;
+                        this.LastError = Segments[i].LastError ?? this.LastError;
                     }
 
                     SetState(DownloaderState.EndedWithError);
@@ -794,7 +795,7 @@ namespace MyDownloader.Core
 
         private void StartSegment(Segment newSegment)
         {
-            Thread segmentThread = new Thread(new ParameterizedThreadStart(SegmentThreadProc));
+            Thread segmentThread = new Thread(new ParameterizedThreadStart(SegmentThreadProc!));
             segmentThread.Start(newSegment);
 
             lock (threads)

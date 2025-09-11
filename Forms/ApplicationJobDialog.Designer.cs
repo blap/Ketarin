@@ -44,6 +44,8 @@ namespace Ketarin.Forms
             this.lblBetaVersions = new System.Windows.Forms.Label();
             this.rbBetaDefault = new System.Windows.Forms.RadioButton();
             this.bVariables = new System.Windows.Forms.Button();
+            this.txtGitHubId = new System.Windows.Forms.TextBox();
+            this.rbGitHub = new System.Windows.Forms.RadioButton();
             this.txtFileHippoId = new System.Windows.Forms.TextBox();
             this.rbFileHippo = new System.Windows.Forms.RadioButton();
             this.txtFixedUrl = new Ketarin.Forms.VariableTextBox();
@@ -63,8 +65,8 @@ namespace Ketarin.Forms
             this.txtSpoofReferer = new Ketarin.Forms.VariableTextBox();
             this.tcApplication = new System.Windows.Forms.TabControl();
             this.tpApplication = new System.Windows.Forms.TabPage();
-            this.numNumberOfRevisions = new System.Windows.Forms.NumericUpDown();
             this.lblNumberOfRevisions = new System.Windows.Forms.Label();
+            this.numNumberOfRevisions = new System.Windows.Forms.NumericUpDown();
             this.chkEnabled = new System.Windows.Forms.CheckBox();
             this.tpSettings = new System.Windows.Forms.TabPage();
             this.lblHashVariable = new System.Windows.Forms.Label();
@@ -168,13 +170,15 @@ namespace Ketarin.Forms
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pnlDownloadSource.Controls.Add(this.pnlBeta);
             this.pnlDownloadSource.Controls.Add(this.bVariables);
+            this.pnlDownloadSource.Controls.Add(this.txtGitHubId);
+            this.pnlDownloadSource.Controls.Add(this.rbGitHub);
             this.pnlDownloadSource.Controls.Add(this.txtFileHippoId);
             this.pnlDownloadSource.Controls.Add(this.rbFileHippo);
             this.pnlDownloadSource.Controls.Add(this.txtFixedUrl);
             this.pnlDownloadSource.Controls.Add(this.rbFixedUrl);
             this.pnlDownloadSource.Location = new System.Drawing.Point(4, 104);
             this.pnlDownloadSource.Name = "pnlDownloadSource";
-            this.pnlDownloadSource.Size = new System.Drawing.Size(365, 80);
+            this.pnlDownloadSource.Size = new System.Drawing.Size(365, 115);
             this.pnlDownloadSource.TabIndex = 6;
             // 
             // pnlBeta
@@ -183,7 +187,7 @@ namespace Ketarin.Forms
             this.pnlBeta.Controls.Add(this.rbAlwaysDownload);
             this.pnlBeta.Controls.Add(this.lblBetaVersions);
             this.pnlBeta.Controls.Add(this.rbBetaDefault);
-            this.pnlBeta.Location = new System.Drawing.Point(92, 55);
+            this.pnlBeta.Location = new System.Drawing.Point(92, 85);
             this.pnlBeta.Margin = new System.Windows.Forms.Padding(0);
             this.pnlBeta.Name = "pnlBeta";
             this.pnlBeta.Size = new System.Drawing.Size(281, 18);
@@ -241,28 +245,6 @@ namespace Ketarin.Forms
             this.bVariables.UseVisualStyleBackColor = true;
             this.bVariables.Click += new System.EventHandler(this.bVariables_Click);
             // 
-            // txtFileHippoId
-            // 
-            this.txtFileHippoId.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtFileHippoId.Location = new System.Drawing.Point(95, 31);
-            this.txtFileHippoId.Name = "txtFileHippoId";
-            this.txtFileHippoId.Size = new System.Drawing.Size(270, 20);
-            this.txtFileHippoId.TabIndex = 15;
-            this.txtFileHippoId.TextChanged += new System.EventHandler(this.txtFileHippoId_TextChanged);
-            this.txtFileHippoId.LostFocus += new System.EventHandler(this.txtFileHippoId_LostFocus);
-            // 
-            // rbFileHippo
-            // 
-            this.rbFileHippo.AutoSize = true;
-            this.rbFileHippo.Location = new System.Drawing.Point(3, 32);
-            this.rbFileHippo.Name = "rbFileHippo";
-            this.rbFileHippo.Size = new System.Drawing.Size(86, 17);
-            this.rbFileHippo.TabIndex = 14;
-            this.rbFileHippo.Text = "File&Hippo ID:";
-            this.rbFileHippo.UseVisualStyleBackColor = true;
-            this.rbFileHippo.CheckedChanged += new System.EventHandler(this.rbFileHippo_CheckedChanged);
-            // 
             // txtFixedUrl
             // 
             this.txtFixedUrl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -286,6 +268,63 @@ namespace Ketarin.Forms
             this.rbFixedUrl.UseVisualStyleBackColor = true;
             this.rbFixedUrl.CheckedChanged += new System.EventHandler(this.rbFixedUrl_CheckedChanged);
             // 
+            // txtFileHippoId
+            // 
+            this.txtFileHippoId.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtFileHippoId.Location = new System.Drawing.Point(95, 30);
+            this.txtFileHippoId.Name = "txtFileHippoId";
+            this.txtFileHippoId.Size = new System.Drawing.Size(186, 20);
+            this.txtFileHippoId.TabIndex = 15;
+            this.txtFileHippoId.TextChanged += new System.EventHandler(this.txtFileHippoId_TextChanged);
+            this.txtFileHippoId.LostFocus += new System.EventHandler(this.txtFileHippoId_LostFocus);
+            // 
+            // rbFileHippo
+            // 
+            this.rbFileHippo.AutoSize = true;
+            this.rbFileHippo.Location = new System.Drawing.Point(3, 31);
+            this.rbFileHippo.Name = "rbFileHippo";
+            this.rbFileHippo.Size = new System.Drawing.Size(86, 17);
+            this.rbFileHippo.TabIndex = 14;
+            this.rbFileHippo.Text = "File&Hippo ID:";
+            this.rbFileHippo.UseVisualStyleBackColor = true;
+            this.rbFileHippo.CheckedChanged += new System.EventHandler(this.rbFileHippo_CheckedChanged);
+            // 
+            // txtGitHubId
+            //
+            this.txtGitHubId.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtGitHubId.Location = new System.Drawing.Point(95, 58);
+            this.txtGitHubId.Name = "txtGitHubId";
+            this.txtGitHubId.Size = new System.Drawing.Size(186, 20);
+            this.txtGitHubId.TabIndex = 17;
+            this.txtGitHubId.TextChanged += new System.EventHandler(this.txtGitHubId_TextChanged);
+            this.txtGitHubId.LostFocus += new System.EventHandler(this.txtGitHubId_LostFocus);
+            // 
+            // rbGitHub
+            //
+            this.rbGitHub.AutoSize = true;
+            this.rbGitHub.Location = new System.Drawing.Point(3, 59);
+            this.rbGitHub.Name = "rbGitHub";
+            this.rbGitHub.Size = new System.Drawing.Size(73, 17);
+            this.rbGitHub.TabIndex = 16;
+            this.rbGitHub.Text = "Git&Hub ID:";
+            this.rbGitHub.UseVisualStyleBackColor = true;
+            this.rbGitHub.CheckedChanged += new System.EventHandler(this.rbGitHub_CheckedChanged);
+            // 
+            // rbFixedUrl
+            // 
+            this.rbFixedUrl.AutoSize = true;
+            this.rbFixedUrl.Checked = true;
+            this.rbFixedUrl.Location = new System.Drawing.Point(3, 3);
+            this.rbFixedUrl.Name = "rbFixedUrl";
+            this.rbFixedUrl.Size = new System.Drawing.Size(50, 17);
+            this.rbFixedUrl.TabIndex = 11;
+            this.rbFixedUrl.TabStop = true;
+            this.rbFixedUrl.Text = "&URL:";
+            this.rbFixedUrl.UseVisualStyleBackColor = true;
+            this.rbFixedUrl.CheckedChanged += new System.EventHandler(this.rbFixedUrl_CheckedChanged);
+            // 
             // pnlTarget
             // 
             this.pnlTarget.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -294,7 +333,7 @@ namespace Ketarin.Forms
             this.pnlTarget.Controls.Add(this.txtTarget);
             this.pnlTarget.Controls.Add(this.rbFolder);
             this.pnlTarget.Controls.Add(this.rbFileName);
-            this.pnlTarget.Location = new System.Drawing.Point(3, 208);
+            this.pnlTarget.Location = new System.Drawing.Point(3, 232);
             this.pnlTarget.Name = "pnlTarget";
             this.pnlTarget.Size = new System.Drawing.Size(365, 53);
             this.pnlTarget.TabIndex = 8;
@@ -350,7 +389,7 @@ namespace Ketarin.Forms
             this.chkDeletePrevious.AutoSize = true;
             this.chkDeletePrevious.Checked = true;
             this.chkDeletePrevious.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkDeletePrevious.Location = new System.Drawing.Point(9, 275);
+            this.chkDeletePrevious.Location = new System.Drawing.Point(9, 322);
             this.chkDeletePrevious.Name = "chkDeletePrevious";
             this.chkDeletePrevious.Size = new System.Drawing.Size(218, 17);
             this.chkDeletePrevious.TabIndex = 17;
@@ -382,7 +421,7 @@ namespace Ketarin.Forms
             // 
             this.sepTarget.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.sepTarget.Location = new System.Drawing.Point(3, 185);
+            this.sepTarget.Location = new System.Drawing.Point(3, 209);
             this.sepTarget.Name = "sepTarget";
             this.sepTarget.Size = new System.Drawing.Size(366, 23);
             this.sepTarget.TabIndex = 7;
@@ -401,7 +440,7 @@ namespace Ketarin.Forms
             // chkShareOnline
             // 
             this.chkShareOnline.AutoSize = true;
-            this.chkShareOnline.Location = new System.Drawing.Point(9, 252);
+            this.chkShareOnline.Location = new System.Drawing.Point(9, 299);
             this.chkShareOnline.Name = "chkShareOnline";
             this.chkShareOnline.Size = new System.Drawing.Size(212, 17);
             this.chkShareOnline.TabIndex = 16;
@@ -444,8 +483,8 @@ namespace Ketarin.Forms
             // 
             // tpApplication
             // 
-            this.tpApplication.Controls.Add(this.numNumberOfRevisions);
             this.tpApplication.Controls.Add(this.lblNumberOfRevisions);
+            this.tpApplication.Controls.Add(this.numNumberOfRevisions);
             this.tpApplication.Controls.Add(this.chkEnabled);
             this.tpApplication.Controls.Add(this.lblApplicationName);
             this.tpApplication.Controls.Add(this.txtApplicationName);
@@ -463,9 +502,18 @@ namespace Ketarin.Forms
             this.tpApplication.Text = "Application";
             this.tpApplication.UseVisualStyleBackColor = true;
             // 
+            // lblNumberOfRevisions
+            // 
+            this.lblNumberOfRevisions.AutoSize = true;
+            this.lblNumberOfRevisions.Location = new System.Drawing.Point(5, 341);
+            this.lblNumberOfRevisions.Name = "lblNumberOfRevisions";
+            this.lblNumberOfRevisions.Size = new System.Drawing.Size(239, 13);
+            this.lblNumberOfRevisions.TabIndex = 9;
+            this.lblNumberOfRevisions.Text = "Total &number of files to keep (original + backups):";
+            // 
             // numNumberOfRevisions
             // 
-            this.numNumberOfRevisions.Location = new System.Drawing.Point(250, 262);
+            this.numNumberOfRevisions.Location = new System.Drawing.Point(250, 339);
             this.numNumberOfRevisions.Minimum = new decimal(new int[] {
             1,
             0,
@@ -480,25 +528,16 @@ namespace Ketarin.Forms
             0,
             0});
             // 
-            // lblNumberOfRevisions
-            // 
-            this.lblNumberOfRevisions.AutoSize = true;
-            this.lblNumberOfRevisions.Location = new System.Drawing.Point(5, 264);
-            this.lblNumberOfRevisions.Name = "lblNumberOfRevisions";
-            this.lblNumberOfRevisions.Size = new System.Drawing.Size(239, 13);
-            this.lblNumberOfRevisions.TabIndex = 9;
-            this.lblNumberOfRevisions.Text = "Total &number of files to keep (original + backups):";
-            // 
             // chkEnabled
             // 
             this.chkEnabled.AutoSize = true;
             this.chkEnabled.Checked = true;
             this.chkEnabled.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkEnabled.Location = new System.Drawing.Point(7, 60);
+            this.chkEnabled.Location = new System.Drawing.Point(9, 366);
             this.chkEnabled.Name = "chkEnabled";
-            this.chkEnabled.Size = new System.Drawing.Size(65, 17);
-            this.chkEnabled.TabIndex = 4;
-            this.chkEnabled.Text = "&Enabled";
+            this.chkEnabled.Size = new System.Drawing.Size(182, 17);
+            this.chkEnabled.TabIndex = 11;
+            this.chkEnabled.Text = "&Enable automatic update checks";
             this.chkEnabled.UseVisualStyleBackColor = true;
             // 
             // tpSettings
@@ -964,6 +1003,8 @@ namespace Ketarin.Forms
         private Separator sepTarget;
         private VariableTextBox txtTarget;
         private Button bBrowseFile;
+        private System.Windows.Forms.TextBox txtGitHubId;
+        private RadioButton rbGitHub;
         private System.Windows.Forms.TextBox txtFileHippoId;
         private RadioButton rbFileHippo;
         private CheckBox chkDeletePrevious;

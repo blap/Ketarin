@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.204
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ketarin", "Ketarin.Net9.csproj", "{288E5727-81A4-4079-A089-3B60DA408CBC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{288E5727-81A4-4079-A089-3B60DA408CBC}.Debug|x64.ActiveCfg = Debug|x64
+		{288E5727-81A4-4079-A089-3B60DA408CBC}.Debug|x64.Build.0 = Debug|x64
+		{288E5727-81A4-4079-A089-3B60DA408CBC}.Release|x64.ActiveCfg = Release|x64
+		{288E5727-81A4-4079-A089-3B60DA408CBC}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5C3D3546-8834-4D90-9F8B-4487A655B2D2}
+	EndGlobalSection
+EndGlobal

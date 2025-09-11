@@ -11,6 +11,7 @@ using CDBurnerXP;
 using CDBurnerXP.Forms;
 using CDBurnerXP.IO;
 using Ketarin;
+using System.Threading.Tasks;
 
 namespace Ketarin.Forms
 {
@@ -158,13 +159,18 @@ namespace Ketarin.Forms
             this.txtExecuteBefore.Application = this.m_ApplicationJob;
 
             // Adjust context menus
-            List<string> appVarNames = this.m_ApplicationJob.Variables.Values.Select(var => var.Name).ToList();
-            appVarNames.AddRange(UrlVariable.GlobalVariables.Values.Select(gVar => gVar.Name));
+            List<string> appVarNames = this.m_ApplicationJob.Variables.Values.Select(var => var.Name ?? string.Empty).ToList();
+            appVarNames.AddRange(UrlVariable.GlobalVariables.Values.Select(gVar => gVar.Name ?? string.Empty));
 
             // Add global  variables
 
             // Add "version" variable to context menu if filehippo ID is present
             if (this.rbFileHippo.Checked && !string.IsNullOrEmpty(this.txtFileHippoId.Text) && !appVarNames.Contains("version"))
+            {
+                appVarNames.Add("version");
+            }
+            // Add "version" variable to context menu if GitHub ID is present
+            if (this.rbGitHub.Checked && !string.IsNullOrEmpty(this.txtGitHubId.Text) && !appVarNames.Contains("version"))
             {
                 appVarNames.Add("version");
             }
@@ -175,9 +181,9 @@ namespace Ketarin.Forms
             this.txtTarget.SetVariableNames(new[] { "category", "appname" }, appVarNames.ToArray());
             this.txtSpoofReferer.SetVariableNames(new[] { "category", "appname" }, appVarNames.ToArray());
             this.txtUseVariablesForChanges.Items.Clear();
-            this.txtUseVariablesForChanges.Items.AddRange(appVarNames.OfType<string>().ToArray());
+            this.txtUseVariablesForChanges.Items.AddRange(appVarNames.ToArray());
             this.cboHashVariable.Items.Clear();
-            this.cboHashVariable.Items.AddRange(appVarNames.OfType<string>().ToArray());
+            this.cboHashVariable.Items.AddRange(appVarNames.ToArray());
 
             foreach (SetupInstructionListBoxPanel panel in this.instructionsListBox.Panels)
             {
@@ -195,7 +201,9 @@ namespace Ketarin.Forms
             this.txtTarget.Text = this.m_ApplicationJob.TargetPath;
             this.txtUserAgent.Text = this.m_ApplicationJob.UserAgent;
             this.txtFileHippoId.Text = this.m_ApplicationJob.FileHippoId;
+            this.txtGitHubId.Text = this.m_ApplicationJob.GitHubRepositoryId;
             this.rbFileHippo.Checked = (this.m_ApplicationJob.DownloadSourceType == SourceType.FileHippo);
+            this.rbGitHub.Checked = (this.m_ApplicationJob.DownloadSourceType == SourceType.GitHub);
             this.rbFixedUrl.Checked = (this.m_ApplicationJob.DownloadSourceType == SourceType.FixedUrl);
             this.chkEnabled.Checked = this.m_ApplicationJob.Enabled;
             this.numNumberOfRevisions.Value = this.m_ApplicationJob.NumberOfRevisions;
@@ -254,10 +262,11 @@ namespace Ketarin.Forms
             }
             this.m_ApplicationJob.Enabled = this.chkEnabled.Checked;
             this.m_ApplicationJob.FileHippoId = this.txtFileHippoId.Text;
+            this.m_ApplicationJob.GitHubRepositoryId = this.txtGitHubId.Text;
             this.m_ApplicationJob.DeletePreviousFile = this.chkDeletePrevious.Checked;
             this.m_ApplicationJob.ExecuteCommand = this.txtExecuteAfter.Text;
             this.m_ApplicationJob.ExecutePreCommand = this.txtExecuteBefore.Text;
-            this.m_ApplicationJob.DownloadSourceType = (this.rbFixedUrl.Checked) ? SourceType.FixedUrl : SourceType.FileHippo;
+            this.m_ApplicationJob.DownloadSourceType = this.rbFixedUrl.Checked ? SourceType.FixedUrl : this.rbGitHub.Checked ? SourceType.GitHub : SourceType.FileHippo;
             this.m_ApplicationJob.Category = this.cboCategory.Text;
             this.m_ApplicationJob.ExclusiveDownload = this.chkDownloadExclusively.Checked;
             this.m_ApplicationJob.ShareApplication = this.chkShareOnline.Checked;
@@ -385,6 +394,13 @@ namespace Ketarin.Forms
             if (this.rbFileHippo.Checked && String.IsNullOrEmpty(this.txtFileHippoId.Text))
             {
                 MessageBox.Show(this, "You did not specify a FileHippo ID.\r\nYou can paste the desired URL from the FileHippo.com website, the ID will be extracted automatically.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.DialogResult = DialogResult.None;
+                return;
+            }
+
+            if (this.rbGitHub.Checked && String.IsNullOrEmpty(this.txtGitHubId.Text))
+            {
+                MessageBox.Show(this, "You did not specify a GitHub repository ID.\r\nYou can paste the desired URL from GitHub, the ID will be extracted automatically.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.DialogResult = DialogResult.None;
                 return;
             }
@@ -615,6 +631,74 @@ namespace Ketarin.Forms
                 this.instructionsListBox.Panels.Add(panel);
             }
         }
+
+        #endregion
+
+        #region GitHub Integration
+
+        private void txtGitHubId_TextChanged(object sender, EventArgs e)
+        {
+            this.rbGitHub.Checked = true;
+        }
+
+        private void txtGitHubId_LostFocus(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(this.txtGitHubId.Text))
+            {
+                this.txtGitHubId.Text = GitHubServices.GetGitHubIdFromUrl(this.txtGitHubId.Text);
+            }
+        }
+
+        private void rbGitHub_CheckedChanged(object sender, EventArgs e)
+        {
+            if (this.rbGitHub.Checked)
+            {
+                this.RefreshVariables();
+                // Auto-fill application name if empty
+                if (string.IsNullOrEmpty(this.txtApplicationName.Text) && !string.IsNullOrEmpty(this.txtGitHubId.Text))
+                {
+                    this.AutoFillApplicationNameFromGitHub();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tries to automatically fill the application name based on the GitHub repository.
+        /// </summary>
+        private void AutoFillApplicationNameFromGitHub()
+        {
+            if (string.IsNullOrEmpty(this.txtGitHubId.Text)) return;
+
+            // Run in background thread to prevent UI blocking
+            ThreadStart thread = delegate()
+            {
+                try
+                {
+                    string appName = GitHubServices.GitHubAppName(this.txtGitHubId.Text);
+                    if (!string.IsNullOrEmpty(appName))
+                    {
+                        this.Invoke((System.Windows.Forms.MethodInvoker)delegate()
+                        {
+                            if (string.IsNullOrEmpty(this.txtApplicationName.Text))
+                            {
+                                this.txtApplicationName.Text = appName;
+                            }
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Just ignore errors, we don't want to bother the user
+                    LogDialog.Log("Could not auto-fill application name from GitHub: " + ex.Message);
+                }
+            };
+
+            new Thread(thread) { IsBackground = true }.Start();
+        }
+
+        #endregion
+
+        #region FileHippo Integration
 
         #endregion
     }

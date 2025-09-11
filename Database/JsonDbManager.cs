@@ -19,6 +19,8 @@ namespace Ketarin.Database
         public string? FixedDownloadUrl { get; set; }
         public string? FileHippoId { get; set; }
         public string? FileHippoVersion { get; set; }
+        public string? GitHubRepositoryId { get; set; }
+        public string? GitHubVersion { get; set; }
         public DateTime? DateAdded { get; set; }
         public DateTime? LastUpdated { get; set; }
         public DateTime? DownloadDate { get; set; }
