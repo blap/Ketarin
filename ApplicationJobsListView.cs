@@ -408,10 +408,7 @@ namespace Ketarin
 
         protected virtual void OnFilterChanged()
         {
-            if (FilterChanged != null)
-            {
-                FilterChanged(this, null);
-            }
+            FilterChanged?.Invoke(this, EventArgs.Empty);
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -458,9 +455,14 @@ namespace Ketarin
                         {
                             try
                             {
-                                Process.Start(variable.VariableType == UrlVariable.Type.Textual
+                                string? url = variable.VariableType == UrlVariable.Type.Textual
                                     ? variable.GetExpandedTextualContent(DateTime.MinValue)
-                                    : variable.ExpandedUrl);
+                                    : variable.ExpandedUrl;
+                                
+                                if (!string.IsNullOrEmpty(url))
+                                {
+                                    Process.Start(url);
+                                }
                             }
                             catch (Exception) { }
                             break;

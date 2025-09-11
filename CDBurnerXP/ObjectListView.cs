@@ -590,11 +590,11 @@ namespace CDBurnerXP.Controls
         /// Return the visible columns in the order they are displayed to the user
         /// </summary>
         [Browsable(false)]
-        public List<OLVColumn> ColumnsInDisplayOrder
+        public List<OLVColumn?> ColumnsInDisplayOrder
         {
             get
             {
-                List<OLVColumn> columnsInDisplayOrder = new List<OLVColumn>(this.Columns.Count);
+                List<OLVColumn?> columnsInDisplayOrder = new List<OLVColumn?>(this.Columns.Count);
                 for (int i = 0; i < this.Columns.Count; i++)
                     columnsInDisplayOrder.Add(null);
                 for (int i = 0; i < this.Columns.Count; i++) {

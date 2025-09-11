@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
@@ -77,8 +77,8 @@ namespace CDBurnerXP.Forms
                         Settings.SetValue(olv, col.Text + ":LastDisplayIndex", col.LastDisplayIndex);
                     }
 
-                    Settings.SetValue(olv, "LastSortColumn", olv.LastSortColumn == null ? "" : olv.LastSortColumn.Text);
-                    Settings.SetValue(olv, "LastSortOrder", olv.LastSortOrder);
+                    Settings.SetValue(olv, "LastSortColumn", olv.LastSortColumn?.Text ?? string.Empty);
+                    Settings.SetValue(olv, "LastSortOrder", (int?)olv.LastSortOrder ?? 0);
                 }
             }
         }
@@ -87,10 +87,10 @@ namespace CDBurnerXP.Forms
         {
             if (FormBorderStyle == FormBorderStyle.Sizable || FormBorderStyle == FormBorderStyle.SizableToolWindow)
             {
-                Size = (Size)Settings.GetValue(this, "Size", Size);
+                Size = (Size?)Settings.GetValue(this, "Size", Size) ?? Size;
             }
 
-            object location = Settings.GetValue(this, "Location", null);
+            object location = Settings.GetValue(this, "Location", default(Point));
             if (m_SavePosition)
             {
                 if (location != null)
@@ -101,7 +101,7 @@ namespace CDBurnerXP.Forms
                         Location = (Point)location;
                     }
                 }
-                WindowState = (FormWindowState)Settings.GetValue(this, "WindowState", FormWindowState.Normal);
+                WindowState = (FormWindowState?)Settings.GetValue(this, "WindowState", FormWindowState.Normal) ?? FormWindowState.Normal;
             }
 
             foreach (Control c in GetAllControls())
@@ -121,7 +121,7 @@ namespace CDBurnerXP.Forms
                         col.LastDisplayIndex = (int)Settings.GetValue(olv, col.Text + ":LastDisplayIndex", col.LastDisplayIndex);
                     }
 
-                    string sortColName = Settings.GetValue(olv, "LastSortColumn", olv.LastSortColumn == null ? null : olv.LastSortColumn.Name) as string;
+                    string sortColName = Settings.GetValue(olv, "LastSortColumn", olv.LastSortColumn?.Name ?? string.Empty) as string;
                     if (!string.IsNullOrEmpty(sortColName))
                     {
                         foreach (OLVColumn col in olv.AllColumns)
@@ -129,7 +129,7 @@ namespace CDBurnerXP.Forms
                             if (col.Text == sortColName)
                             {
                                 olv.LastSortColumn = col;
-                                olv.LastSortOrder = (SortOrder)Conversion.ToInt(Settings.GetValue(olv, "LastSortOrder", olv.LastSortOrder));
+                                olv.LastSortOrder = (SortOrder?)(Conversion.ToInt(Settings.GetValue(olv, "LastSortOrder", olv.LastSortOrder))) ?? SortOrder.None;
                                 olv.Sorting = olv.LastSortOrder;
                                 break;
                             }

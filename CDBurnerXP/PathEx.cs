@@ -34,7 +34,7 @@ namespace CDBurnerXP.IO
                     int value = (valueObj != null && valueObj is int) ? Convert.ToInt16(valueObj) : 0;
                     return (value == 1);
                 }
-                catch
+                catch (Exception)
                 {
                     return false;
                 }
@@ -98,7 +98,7 @@ namespace CDBurnerXP.IO
                 CopyFolder(sourcePath, newPath);
                 return newPath;
             }
-            catch
+            catch (Exception)
             {
                 return sourcePath;
             }
@@ -119,7 +119,7 @@ namespace CDBurnerXP.IO
                 DriveInfo info = new DriveInfo(rootPath);
                 return (info.DriveType == DriveType.Removable || info.DriveType == DriveType.CDRom);
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
@@ -142,7 +142,7 @@ namespace CDBurnerXP.IO
                 DriveInfo info = new DriveInfo(rootPath);
                 return (info.DriveType == DriveType.Network);
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
@@ -353,7 +353,7 @@ namespace CDBurnerXP.IO
                 sInfo = ex.Message;
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }

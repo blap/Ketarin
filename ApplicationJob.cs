@@ -38,7 +38,7 @@ namespace Ketarin
         private string m_PreviousRelativeLocation = string.Empty;
         private List<SetupInstruction> setupInstructions = new List<SetupInstruction>();
         private static PropertyInfo[]? applicationJobProperties;
-        private string cachedCurrentLocation = string.Empty;
+        private string? cachedCurrentLocation = null;
         private string previousLocation = string.Empty;
         private DateTime? m_DateAdded;
 
@@ -846,7 +846,7 @@ namespace Ketarin
         /// Imports one (incomplete) ApplicationJob from a PAD file.
         /// </summary>
         /// <returns>The incomplete ApplicationJob. Completiton by user required.</returns>
-        public static ApplicationJob ImportFromPad(string fileName)
+        public static ApplicationJob? ImportFromPad(string fileName)
         {
             return ImportFromPadXml(File.ReadAllText(fileName));
         }
@@ -1393,7 +1393,7 @@ namespace Ketarin
             // Read each job
             while (true)
             {
-                ApplicationJob importedJob = (ApplicationJob)serializer.Deserialize(reader);
+                ApplicationJob? importedJob = serializer.Deserialize(reader) as ApplicationJob;
                 if (importedJob == null) break;
 
                 // If a job already exists, only update it!
@@ -1439,16 +1439,16 @@ namespace Ketarin
             this.SourceTemplate = reader["SourceTemplate"] as string ?? string.Empty;
             this.m_PreviousRelativeLocation = reader["PreviousRelativeLocation"] as string ?? string.Empty;
 
-            string executeCommandType = reader["ExecuteCommandType"] as string;
+            string? executeCommandType = reader["ExecuteCommandType"] as string;
             if (executeCommandType != null)
             {
-                this.ExecuteCommandType = Command.ConvertToScriptType(executeCommandType ?? string.Empty);
+                this.ExecuteCommandType = Command.ConvertToScriptType(executeCommandType);
             }
 
-            string executePreCommandType = reader["ExecutePreCommandType"] as string;
+            string? executePreCommandType = reader["ExecutePreCommandType"] as string;
             if (executePreCommandType != null)
             {
-                this.ExecutePreCommandType = Command.ConvertToScriptType(executePreCommandType ?? string.Empty);
+                this.ExecutePreCommandType = Command.ConvertToScriptType(executePreCommandType);
             }
 
             if (reader["DownloadBeta"] != DBNull.Value && reader["DownloadBeta"] != null)
@@ -1458,7 +1458,7 @@ namespace Ketarin
             // An application has not been downloaded necessarily
             this.DownloadDate = (reader["DownloadDate"] != DBNull.Value) ? reader["DownloadDate"] as DateTime? : null;
             
-            string guid = reader["JobGuid"] as string;
+            string? guid = reader["JobGuid"] as string;
             this.Guid = string.IsNullOrEmpty(guid) ? Guid.Empty : new Guid(guid);
         }
 
@@ -1574,7 +1574,7 @@ namespace Ketarin
             string fileName = Path.GetFileName(netResponse.ResponseUri.AbsolutePath);
 
             // Look for alternative file name
-            string disposition = netResponse.Headers.Get("content-disposition") as string;
+            string? disposition = netResponse.Headers.Get("content-disposition") as string;
             if (!string.IsNullOrEmpty(disposition))
             {
                 string token = "filename=";
@@ -1596,12 +1596,10 @@ namespace Ketarin
                 }
             }
 
-            if (string.IsNullOrEmpty(fileName) && !string.IsNullOrEmpty(alternateFileName))
+            if (string.IsNullOrEmpty(fileName))
             {
-                fileName = Path.GetFileName(alternateFileName);
+                fileName = alternateFileName;
             }
-
-            fileName = fileName.Replace("%20", " ");
 
             return fileName;
         }

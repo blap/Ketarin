@@ -78,7 +78,11 @@ namespace Ketarin.Forms
 
         private void OnArgumentMenuItemClick(object? sender, EventArgs e)
         {
-            txtParameters.AppendText(((ToolStripItem)sender).Tag as string);
+            string? tag = ((ToolStripItem)sender).Tag as string;
+            if (tag != null)
+            {
+                txtParameters.AppendText(tag);
+            }
         }
 
         private void bOK_Click(object sender, EventArgs e)

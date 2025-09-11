@@ -302,7 +302,7 @@ namespace MyDownloader.Core
                 state == DownloaderState.Working);
         }
 
-        public RemoteFileInfo RemoteFileInfo
+        public RemoteFileInfo? RemoteFileInfo
         {
             get { return remoteFileInfo; }
         }
@@ -685,12 +685,13 @@ namespace MyDownloader.Core
             try
             {
                 // check if the file changed on the server
-                if (!newInfo.AcceptRanges ||
+                if (RemoteFileInfo == null ||
+                    !newInfo.AcceptRanges ||
                     newInfo.LastModified > RemoteFileInfo.LastModified ||
                     newInfo.FileSize != RemoteFileInfo.FileSize)
                 {
                     this.remoteFileInfo = newInfo;
-                    StartSegments(this.RequestedSegments, stream);
+                    StartSegments(this.RequestedSegments, stream!);
                 }
                 else
                 {
@@ -860,7 +861,7 @@ namespace MyDownloader.Core
                 OnSegmentStarting(segment);
 
                 if (segment.InputStream == null)
-                {                    
+                {
                     // Check for cancellation
                     cancellationTokenSource?.Token.ThrowIfCancellationRequested();
 
@@ -871,14 +872,15 @@ namespace MyDownloader.Core
 
                     while (location != this.ResourceLocation)
                     {
-                        Stream tempStream;
+                        Stream? tempStream;
 
                         // get the remote file info on mirror
                         RemoteFileInfo tempRemoteInfo = provider.GetFileInfo(location, out tempStream);
                         if (tempStream != null) tempStream.Dispose();
 
                         // check if the file on mirror is the same
-                        if (tempRemoteInfo.FileSize == remoteFileInfo.FileSize &&
+                        if (remoteFileInfo != null &&
+                            tempRemoteInfo.FileSize == remoteFileInfo.FileSize &&
                             tempRemoteInfo.AcceptRanges == remoteFileInfo.AcceptRanges)
                         {
                             // if yes, stop looking for the mirror

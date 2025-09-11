@@ -111,7 +111,7 @@ namespace Ketarin.Forms
             this.CancelButton = this.bCancel;
             this.cboHashType.SelectedIndex = 0;
 
-            string defaultXml = Settings.GetValue("DefaultApplication", "") as string;
+            string? defaultXml = Settings.GetValue("DefaultApplication", "") as string;
             if (!string.IsNullOrEmpty(defaultXml))
             {
                 this.m_ApplicationJob = ApplicationJob.LoadOneFromXml(defaultXml);

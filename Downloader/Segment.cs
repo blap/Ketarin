@@ -18,7 +18,7 @@ namespace MyDownloader.Core
         private long initialStartPosition;
         private long endPosition;
         private Stream outputStream = Stream.Null;
-        private Stream inputStream = Stream.Null;
+        private Stream? inputStream = Stream.Null;
         private Exception? lastError = null;
         private SegmentState state;
         private bool started = false;
@@ -183,7 +183,7 @@ namespace MyDownloader.Core
             }
         }
 
-        public Stream InputStream
+        public Stream? InputStream
         {
             get
             {

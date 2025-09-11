@@ -78,25 +78,33 @@ namespace Ketarin.Database
                     CreateNoWindow = true
                 };
                 
-                using (Process process = Process.Start(startInfo))
+                Process? process = Process.Start(startInfo);
+                if (process != null)
                 {
-                    // Read output
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    
-                    process.WaitForExit();
-                    
-                    this.LastOutput = output;
-                    LogDialog.Log("Batch script output: " + output);
-                    
-                    if (!string.IsNullOrEmpty(error))
+                    using (process)
                     {
-                        LogDialog.Log("Batch script error: " + error);
-                        if (process != null && process.HasExited && process.ExitCode != 0)
+                        // Read output
+                        string output = process.StandardOutput.ReadToEnd();
+                        string error = process.StandardError.ReadToEnd();
+
+                        process.WaitForExit();
+
+                        this.LastOutput = output;
+                        LogDialog.Log("Batch script output: " + output);
+
+                        if (!string.IsNullOrEmpty(error))
                         {
-                            throw new ApplicationException($"Batch script failed with exit code {process.ExitCode}: {error}");
+                            LogDialog.Log("Batch script error: " + error);
+                            if (process.HasExited && process.ExitCode != 0)
+                            {
+                                throw new ApplicationException($"Batch script failed with exit code {process.ExitCode}: {error}");
+                            }
                         }
                     }
+                }
+                else
+                {
+                    throw new ApplicationException("Failed to start batch script process");
                 }
                 
                 // Clean up

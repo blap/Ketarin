@@ -296,7 +296,7 @@ namespace Ketarin.Async
 
             // Update each application
             var tasks = new List<Task>();
-            ApplicationJob previousJob = null;
+            ApplicationJob? previousJob = null;
 
             foreach (ApplicationJob job in m_Jobs)
             {

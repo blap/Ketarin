@@ -99,7 +99,7 @@ namespace Ketarin
 
         // Retrieve a parameter value if it exists 
         // (overriding C# indexer property)
-        public string this[string Param]
+        public string? this[string Param]
         {
             get
             {
