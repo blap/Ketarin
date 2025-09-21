@@ -259,7 +259,9 @@ namespace CDBurnerXP {
                 // Use JSON serialization instead of BinaryFormatter to avoid SYSLIB0011 warning
                 try
                 {
-                    return JsonSerializer.Serialize(value);
+                    // Store type information along with the serialized data for proper deserialization
+                    var typeInfo = new { TypeName = value?.GetType().AssemblyQualifiedName, Data = value };
+                    return JsonSerializer.Serialize(typeInfo);
                 }
                 catch (Exception)
                 {
@@ -272,9 +274,21 @@ namespace CDBurnerXP {
                 // Use JSON deserialization instead of BinaryFormatter to avoid SYSLIB0011 warning
                 try
                 {
-                    // We need to know the type to deserialize to, so we'll return the string as-is
-                    // In a real implementation, you would need to store type information
-                    return value;
+                    // Deserialize with type information to properly reconstruct the object
+                    var typeInfo = JsonSerializer.Deserialize<dynamic>(value);
+                    if (typeInfo != null)
+                    {
+                        var type = typeInfo.GetType();
+                        if (type != null)
+                        {
+                            var prop = type.GetProperty("Data");
+                            if (prop != null)
+                            {
+                                return typeInfo.Data;
+                            }
+                        }
+                    }
+                    return null;
                 }
                 catch (Exception)
                 {

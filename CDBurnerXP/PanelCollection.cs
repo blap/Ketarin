@@ -204,7 +204,7 @@ namespace CDBurnerXP.Controls
 
         public object SyncRoot
         {
-            get { throw new Exception("The method or operation is not implemented."); }
+            get { return m_Panels; }
         }
 
         #endregion

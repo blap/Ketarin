@@ -20,7 +20,7 @@
     <AssemblyCopyright>© Canneverbe Limited 2008-2020</AssemblyCopyright>
     <AssemblyVersion>1.9.0.0</AssemblyVersion>
     <AssemblyFileVersion>1.9.0.0</AssemblyFileVersion>
-    <NoWarn>WFO1000;CA1416;SYSLIB0014</NoWarn>
+    <NoWarn>WFO1000;CA1416;SYSLIB0014;8600;8601;8602;8603;8604;8625;8597</NoWarn>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <LangVersion>10.0</LangVersion>

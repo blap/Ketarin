@@ -1,4 +1,4 @@
-﻿// Ketarin - Copyright (C) 2008  Canneverbe Limited
+// Ketarin - Copyright (C) 2008  Canneverbe Limited
 // The icons used within the application are *NOT* licensed under the GNU General Public License.
 
 // This program is free software; you can redistribute it and/or
@@ -294,8 +294,11 @@ namespace Ketarin
                 List<string> appNames = new List<string>();
                 foreach (string xml in e.Value)
                 {
-                    ApplicationJob job = ApplicationJob.LoadOneFromXml(xml);
-                    appNames.Add(job.Name);
+                    ApplicationJob? job = ApplicationJob.LoadOneFromXml(xml);
+                    if (job != null)
+                    {
+                        appNames.Add(job.Name);
+                    }
                 }
 
                 string msg = string.Format("Updates for the following application definitions which you added from the online database have been found:\r\n\r\n{0}\r\n\r\nDo you want to update these applications now?", string.Join("\r\n", appNames.ToArray()));
@@ -1258,7 +1261,7 @@ namespace Ketarin
 
         private void ImportFromFile(string file)
         {
-            ApplicationJob padImport = ApplicationJob.ImportFromPad(file);
+            ApplicationJob? padImport = ApplicationJob.ImportFromPad(file);
             if (padImport != null)
             {
                 ApplicationJobDialog newJob = new ApplicationJobDialog();

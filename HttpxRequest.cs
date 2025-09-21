@@ -22,7 +22,6 @@ namespace Ketarin
         private string? m_Method = "GET";
         private WebHeaderCollection m_Headers = new WebHeaderCollection();
         private string? m_ContentType;
-        private long m_ContentLength;
         private Stream? m_ContentStream;
         private int m_Timeout = 100000; // Default timeout in milliseconds
 
@@ -149,8 +148,8 @@ namespace Ketarin
                 {
                     m_ContentStream.Position = 0;
                     var contentBytes = new byte[m_ContentStream.Length];
-                    // Fix for CA2022 warning - use ReadAsync with CancellationToken
-                    await m_ContentStream.ReadAsync(contentBytes, 0, contentBytes.Length, CancellationToken.None);
+                    // Fix for CA2022 warning - use ReadExactlyAsync which is more precise
+                    await m_ContentStream.ReadExactlyAsync(contentBytes, 0, contentBytes.Length);
                     
                     var content = new ByteArrayContent(contentBytes);
                     

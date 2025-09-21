@@ -517,10 +517,10 @@ namespace CDBurnerXP.Controls
                     return null;
 
                 Type type = currentObject.GetType();
-                System.Reflection.PropertyInfo propertyInfo = type.GetProperty(part);
+                System.Reflection.PropertyInfo? propertyInfo = type.GetProperty(part);
                 if (propertyInfo != null)
                 {
-                    currentObject = propertyInfo?.GetValue(currentObject, null) ?? currentObject;
+                    currentObject = propertyInfo.GetValue(currentObject, null) ?? currentObject;
                 }
                 else
                 {
@@ -577,10 +577,10 @@ namespace CDBurnerXP.Controls
                     return;
 
                 Type type = currentObject.GetType();
-                System.Reflection.PropertyInfo propertyInfo = type.GetProperty(parts[i]);
+                System.Reflection.PropertyInfo? propertyInfo = type.GetProperty(parts[i]);
                 if (propertyInfo != null)
                 {
-                    currentObject = propertyInfo?.GetValue(currentObject, null) ?? currentObject;
+                    currentObject = propertyInfo.GetValue(currentObject, null) ?? currentObject;
                 }
                 else
                 {
@@ -592,7 +592,7 @@ namespace CDBurnerXP.Controls
             if (currentObject != null)
             {
                 Type type = currentObject.GetType();
-                System.Reflection.PropertyInfo propertyInfo = type.GetProperty(parts[parts.Length - 1]);
+                System.Reflection.PropertyInfo? propertyInfo = type.GetProperty(parts[parts.Length - 1]);
                 if (propertyInfo != null)
                 {
                     propertyInfo.SetValue(currentObject, newValue, null);

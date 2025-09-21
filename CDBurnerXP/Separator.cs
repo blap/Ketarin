@@ -13,14 +13,18 @@ namespace CDBurnerXP.Controls
         private int m_Offset = 4;
 
         /// <summary>
-        /// Not implemented.
+        /// Gets or sets whether the control automatically resizes based on its contents.
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool AutoSize
         {
             get { return false; }
-            set { }
+            set 
+            { 
+                // Separator control does not support auto-sizing
+                // Value is intentionally ignored
+            }
         }
 
         /// <summary>

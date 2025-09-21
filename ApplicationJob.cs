@@ -784,8 +784,8 @@ namespace Ketarin
 
             foreach (string xml in xmlValues)
             {
-                ApplicationJob job = LoadOneFromXml(xml);
-                if (job.Guid == this.Guid)
+                ApplicationJob? job = LoadOneFromXml(xml);
+                if (job != null && job.Guid == this.Guid)
                 {
                     this.UpdateTemplatePropertiesFromApp(job); 
                     return true;
@@ -851,7 +851,10 @@ namespace Ketarin
             }
 
             ApplicationJob newAppDefinition = LoadOneFromXml(newTemplate.OuterXml);
-            this.UpdateTemplatePropertiesFromApp(newAppDefinition);
+            if (newAppDefinition != null)
+            {
+                this.UpdateTemplatePropertiesFromApp(newAppDefinition);
+            }
         }        
 
         /// <summary>
@@ -2054,8 +2057,9 @@ namespace Ketarin
         public void ExecutePostUpdateCommands()
         {
             // Execute a default command?
-            string defaultCommand = Settings.GetValue("DefaultCommand") as string;
-            ScriptType defaultCommandType = Command.ConvertToScriptType(Settings.GetValue("DefaultCommandType") as string ?? string.Empty);
+            string? defaultCommand = Settings.GetValue("DefaultCommand") as string;
+            string? defaultCommandTypeValue = Settings.GetValue("DefaultCommandType") as string;
+            ScriptType defaultCommandType = Command.ConvertToScriptType(defaultCommandTypeValue ?? string.Empty);
             new Command(defaultCommand, defaultCommandType).Execute(this, this.PreviousLocation);
 
             // Do we need to execute a command after downloading?

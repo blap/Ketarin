@@ -5,3 +5,5 @@
 *.csproj.user
 *.cache
 .fake
+.qoder/
+.vscode/

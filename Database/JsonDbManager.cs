@@ -504,14 +504,12 @@ namespace Ketarin.Database
         }
         
         /// <summary>
-        /// Loads global variables
+        /// Loads global variables from a JSON file
         /// </summary>
         public static Dictionary<string, string> LoadGlobalVariables()
         {
             lock (lockObject)
             {
-                // For now, return an empty dictionary
-                // In a real implementation, you would load from a JSON file
                 string directoryPath = Path.GetDirectoryName(m_DatabasePath) ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 string globalVariablesPath = Path.Combine(directoryPath, "globalvariables.json");
                 if (File.Exists(globalVariablesPath))
@@ -594,7 +592,8 @@ namespace Ketarin.Database
         {
             lock (lockObject)
             {
-                // For now, return an empty array since we don't have this functionality
+                // Return an empty array as this functionality is not implemented in the JSON version
+                // In a full implementation, this would load ApplicationList data from a JSON file
                 return new ApplicationList[0];
             }
         }
